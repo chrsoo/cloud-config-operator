@@ -1,0 +1,7 @@
+apiVersion: k8.jabberwocky.se/v1alpha1
+kind: CloudConfig
+metadata:
+  name: example-cloudconfig
+spec:
+  # Add fields here
+  size: 3
