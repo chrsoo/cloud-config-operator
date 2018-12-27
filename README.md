@@ -11,14 +11,13 @@ The CloudConfig CRD defines a Cloud Config Server configuration that Spring Clou
 Operator will monitor and synchronize with one or more Kubernetes applications in
 a number of `environments`.
 
-An environment is the configuration given by a `profile` and `label`.
+An __environment__ is the Cloud Config configuration given by a `profile` and 
+`label`. For each environment in `environments`, Spring Cloud Operator will
 
-For each environment, Spring Cloud Operator will
+* Retrieve the `appList` list of applications in the `appName` applicaiton configuration; and
+* For each application on in the apply the `specFile` Kubernetes specification
 
-* Retrieve the `appList`list of applications for the `appName` application
-* For each application apply the `specFile` Kubernetes specification
-
-Cloud Config example:
+CloudConfig CRD example:
 
 ```yaml
 apiVersion: k8.jabberwocky.se/v1alpha1
@@ -47,28 +46,17 @@ spec:
       name: Production
       profile: [ vsg, prd ]
 ```
-
-Given the example above and that `cloud-config-serfver` Spring Cloud Operator will 
-
-1. Retrieve the file `/dms-cluster/vsg,dev/develop.yaml` configuration
-1. and apply it to the `ns` namespace
-1. Retrieve the configuration `/dms-cluster/vsg,dev/develop.yaml` and iterate over the `services` array
-1. For each `app` in the array, apply the `${app}/vsg,dev/develop/deployment.yaml`
-
-It then proceeds to the next namespace in the list
-
 ### CloudConfigServer
-git
-Example:
+The CloudConfigServer CRD is used to manage a Spring Cloud Config Server Kubernetes service.
 
+CloudConfigServer CRD example:
 ```yaml
 apiVersion: k8.jabberwocky.se/v1alpha1
 kind: CloudConfigServer
 metadata:
   name: cloud-config-server   # name of this config server
 spec:
-   
-
+  # TODO provide sample configuration of a Spring Cloud Server
 ```
 
 ## References
