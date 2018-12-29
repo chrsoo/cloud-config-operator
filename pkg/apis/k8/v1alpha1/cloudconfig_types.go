@@ -4,13 +4,43 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// CloudConfigEnv defines a CloudConfig environment configuration
+type CloudConfigEnv struct {
+	// Cloud Config name
+	Name string `json:"name,omitempty"`
+
+	// application name, defaults to the CloudConfig name
+	AppName string `json:"appName,omitempty"`
+
+	// List or profile names
+	Profile []string `json:"profile,omitempty"`
+
+	// label used for all apps, defaults to 'master'
+	Label string `json:"label,omitempty"`
+
+	// Cloud Config Server name or URL
+	Server string `json:"server,omitempty"`
+
+	// Cloud Config Server secret
+	// FIXME use path file or whatever
+	Credentials string `json:"credentials,omitempty"`
+
+	// app spec file, defaults to 'deployment.yaml'
+	// FIXME use path file or whatever
+	SpecFile string `json:"specFile,omitempty"`
+
+	// application list property name
+	AppList string `json:"appList,omitempty"`
+
+}
 
 // CloudConfigSpec defines the desired state of CloudConfig
 type CloudConfigSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	Defaults CloudConfigEnv `json:"defaults,omitempty"`
+	
+	// Environments where apps are managed
+	Environments map[string]CloudConfigEnv `json:"environments,omitempty"`
 }
 
 // CloudConfigStatus defines the observed state of CloudConfig
