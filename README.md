@@ -23,19 +23,20 @@ CloudConfig CRD example:
 apiVersion: k8.jabberwocky.se/v1alpha1
 kind: CloudConfig
 metadata:
-  name: dms                   # System or Application name 
+  name: dms                     # System or Application name 
 spec:
-  server: cloud-config-server # Cloud Config Server name or URL
-  credentials: cloud-config   # Cloud Config Server secret 
-  label: master               # label used for all apps, defaults to 'master'
-  specFile: deployment.yaml   # app spec file, defaults to 'deployment.yaml'
-  appName: dms-cluster        # application name, defaults to the CloudConfig name
-  appList: services           # application list property
-  environments:               # Environments where apps are managed
-    dev:                      # environment key
-      name: Development       # environment name, defaults to the key value
-      profile: [ vsg, dev ]   # cloud config profiles for the env
-      label: develop          # optionally override the global label
+  defaults:
+    server: cloud-config-server # Cloud Config Server name or URL
+    credentials: cloud-config   # Cloud Config Server secret 
+    label: master               # label used for all apps, defaults to 'master'
+    specFile: deployment.yaml   # app spec file, defaults to 'deployment.yaml'
+    appName: dms-cluster        # application name, defaults to the CloudConfig name
+    appList: services           # application list property
+  environments:                 # Environments where apps are managed, global values can be overridden
+    dev:                        # environment key
+      name: Development         # environment name, defaults to the key value
+      profile: [ vsg, dev ]     # cloud config profiles for the env
+      label: develop            # optionally override the global label
     qua:
       name: Quality
       profile: [ vsg, qua ]
