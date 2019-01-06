@@ -183,11 +183,14 @@ func newCronJobForCR(cr *k8v1alpha1.CloudConfig) (*cronv1.CronJob, error) {
 							Labels:    labels,
 						},
 						Spec: corev1.PodSpec{
+							ServiceAccountName: "cloud-config-operator",
 							Containers: []corev1.Container{
 								{
 									Name:    "cloud-config-operator",
-									Image:   "cloud-config-operator",
-									Command: []string{"--reconcile", config},
+									Image:   "cloud-config-operator:develop",
+									Command: []string{"cloud-config-operator", "--reconcile", config},
+									// FIXME change back to ImagePullPolicy: Always
+									ImagePullPolicy: "Never",
 								},
 							},
 							RestartPolicy: "Never",
