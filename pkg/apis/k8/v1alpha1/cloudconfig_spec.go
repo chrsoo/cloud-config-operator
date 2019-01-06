@@ -8,6 +8,8 @@ import (
 
 // CloudConfigSpec defines the desired state of CloudConfig
 type CloudConfigSpec struct {
+	// Schedule is the cron job schedule to used for reconciling the Cloud Config configuration
+	Schedule string `json:"schedule,omitempty"`
 
 	// Default environment properties
 	Environment `json:",omitempty"`
@@ -18,15 +20,6 @@ type CloudConfigSpec struct {
 
 // GetEnvironment returns an environment from the spec falling back to default values for unspecified fields
 func (spec CloudConfigSpec) GetEnvironment(key string) *Environment {
-	// TODO move spec fallbacks away from here
-	// TODO default spec.Name to metadata.Name
-	if spec.AppName == "" {
-		spec.AppName = spec.Name
-	}
-	if spec.Key == "" {
-		spec.Key = spec.Name
-    }
-
 	e := spec.Environments[key]
 	env := e.DeepCopy()
 	env.Key = key

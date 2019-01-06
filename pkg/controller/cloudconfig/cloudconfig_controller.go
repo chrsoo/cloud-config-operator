@@ -2,6 +2,7 @@ package cloudconfig
 
 import (
 	"context"
+	"encoding/json"
 
 	k8v1alpha1 "github.com/chrsoo/cloud-config-operator/pkg/apis/k8/v1alpha1"
 	jobv1 "k8s.io/api/batch/v1"
@@ -19,6 +20,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+)
+
+const (
+	// DefaultSchedule is the default cron job reconciliation schedule
+	DefaultSchedule = "*/1 * * * *"
 )
 
 var log = logf.Log.WithName("controller_cloudconfig")
@@ -95,7 +101,11 @@ func (r *ReconcileCloudConfig) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Define a new CronJob object
-	job := newCronJobForCR(instance)
+	job, err := newCronJobForCR(instance)
+	if err != nil {
+		reqLogger.Error(err, "Could not marshal CloudConfig as JSON; returning request to queue")
+		return reconcile.Result{}, err
+	}
 
 	// Set CloudConfig instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, job, r.scheme); err != nil {
@@ -125,8 +135,29 @@ func (r *ReconcileCloudConfig) Reconcile(request reconcile.Request) (reconcile.R
 	return reconcile.Result{}, nil
 }
 
+func setFallbackValues(cr *k8v1alpha1.CloudConfig) {
+	fallBackIfEmpty(&cr.Spec.Environment.Name, cr.ObjectMeta.GetName())
+	fallBackIfEmpty(&cr.Spec.Environment.AppName, cr.Spec.Environment.Name)
+	fallBackIfEmpty(&cr.Spec.Environment.Key, cr.Spec.Environment.Name)
+	fallBackIfEmpty(&cr.Spec.Schedule, DefaultSchedule)
+}
+
+func fallBackIfEmpty(field *string, defaultValue string) {
+	if *field == "" {
+		*field = defaultValue
+	}
+}
+
 // newCronJobForCR returns a CronJob pod with the same name/namespace as the cr
-func newCronJobForCR(cr *k8v1alpha1.CloudConfig) *cronv1.CronJob {
+func newCronJobForCR(cr *k8v1alpha1.CloudConfig) (*cronv1.CronJob, error) {
+
+	setFallbackValues(cr)
+	spec, err := json.Marshal(cr.Spec)
+	if err != nil {
+		return nil, err
+	}
+	config := string(spec)
+
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -137,8 +168,7 @@ func newCronJobForCR(cr *k8v1alpha1.CloudConfig) *cronv1.CronJob {
 			Labels:    labels,
 		},
 		Spec: cronv1.CronJobSpec{
-			// TODO use schedule from CR
-			Schedule: "*/1 * * * *",
+			Schedule: cr.Spec.Schedule,
 			JobTemplate: cronv1.JobTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      cr.Name + "-job",
@@ -155,9 +185,9 @@ func newCronJobForCR(cr *k8v1alpha1.CloudConfig) *cronv1.CronJob {
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
-									Name:    "busybox",
-									Image:   "busybox",
-									Command: []string{"echo", cr.Name},
+									Name:    "cloud-config-operator",
+									Image:   "cloud-config-operator",
+									Command: []string{"--reconcile", config},
 								},
 							},
 							RestartPolicy: "Never",
@@ -166,5 +196,5 @@ func newCronJobForCR(cr *k8v1alpha1.CloudConfig) *cronv1.CronJob {
 				},
 			},
 		},
-	}
+	}, nil
 }
