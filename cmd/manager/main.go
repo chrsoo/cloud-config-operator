@@ -7,12 +7,15 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/chrsoo/cloud-config-operator/pkg/apis/k8/v1alpha1"
+
 	"github.com/chrsoo/cloud-config-operator/pkg/apis"
 	"github.com/chrsoo/cloud-config-operator/pkg/controller"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
+	"k8s.io/apimachinery/pkg/util/json"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -21,6 +24,7 @@ import (
 )
 
 var log = logf.Log.WithName("cmd")
+var reconcile = flag.String("reconcile", "", "Reconcile the CloudConfig given as an argument")
 
 func printVersion() {
 	log.Info(fmt.Sprintf("Go Version: %s", runtime.Version()))
@@ -38,6 +42,24 @@ func main() {
 	logf.SetLogger(logf.ZapLogger(false))
 
 	printVersion()
+
+	// -- CloudConfig reconciliation process
+
+	if *reconcile != "" {
+		spec := []byte(*reconcile)
+		// parse the value as a JSON CloudConfigSpec
+		var config v1alpha1.CloudConfigSpec
+		if err := json.Unmarshal(spec, &config); err != nil {
+			log.Error(err, "Could not unmarshal CloudConfigSpec:\n%s", *reconcile)
+			os.Exit(1)
+		}
+		// reconcile the CloudConfigSpec
+		// TODO improve logging, error handling and think about exit codes!
+		config.Reconcile()
+		os.Exit(0)
+	}
+
+	// -- Normal operator processing
 
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
