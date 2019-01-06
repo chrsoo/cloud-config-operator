@@ -101,8 +101,11 @@ func (env Environment) ensureNamespace() {
 		"namespace",
 		env.Namespace)
 
-	if _, err := cmd.CombinedOutput(); err != nil {
-		// TODO capture and log output
+	if msg, err := cmd.CombinedOutput(); err != nil {
+		log.Info("Could not find namespace",
+			"namespace", env.Namespace,
+			"command", strings.Join(cmd.Args, " "),
+			"output", string(msg))
 
 		// the namespace does not exist, create it!
 		cmd = execCommand(
@@ -111,8 +114,14 @@ func (env Environment) ensureNamespace() {
 			"namespace",
 			env.Namespace)
 
-		if _, err := cmd.CombinedOutput(); err != nil {
-			// TODO capture and log output
+		log.Info("Creating namespace '"+env.Namespace+"'",
+			"namespace", env.Namespace)
+
+		if out, err := cmd.CombinedOutput(); err != nil {
+			log.Error(err, "Could not create namespace",
+				"namespace", env.Namespace,
+				"command", strings.Join(cmd.Args, " "),
+				"output", string(out))
 			panic(err)
 		}
 	}
@@ -128,8 +137,15 @@ func (env Environment) apply(config []byte) {
 		"-f",
 		"-")
 	cmd.Stdin = bytes.NewReader(config)
-	if _, err := cmd.CombinedOutput(); err != nil {
-		// TODO capture and log output
+
+	log.Info("Applying config for namespace", "namespace",
+		env.Namespace, "command",
+		strings.Join(cmd.Args, " "))
+
+	if out, err := cmd.CombinedOutput(); err != nil {
+		log.Error(err, "Could not apply config in namespace",
+			"namespace", env.Namespace,
+			"output", string(out))
 		panic(err)
 	}
 }
