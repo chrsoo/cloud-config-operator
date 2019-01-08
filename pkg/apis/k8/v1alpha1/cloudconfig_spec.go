@@ -3,7 +3,8 @@ package v1alpha1
 // Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 import (
 	"sync"
-    "github.com/imdario/mergo"
+
+	"github.com/imdario/mergo"
 )
 
 // CloudConfigSpec defines the desired state of CloudConfig
@@ -49,22 +50,22 @@ func (spec CloudConfigSpec) Reconcile() {
 	}
 
 	wg.Wait()
-	if len(fail) > 0 {
-		panic("Reconcilation failed")
+	if failed := len(fail); failed > 0 {
+		panic("Reconcilation failed for " + string(failed) + "' out of " + string(len(spec.Environments)) + " environments")
 	}
 }
 
 func (env Environment) finalize(wg *sync.WaitGroup, fail *chan bool) {
 	defer wg.Done()
 	if err := recover(); err != nil {
+		*fail <- true
 		switch err.(type) {
-			case string:
-				log.Info(err.(string), "namespace", env.Namespace)
-			case error:
-				log.Error(err.(error), "namespace", env.Namespace)
-				*fail <- true
-			default:
-				panic(err)
+		case string:
+			log.Info(err.(string), "namespace", env.Namespace)
+		case error:
+			log.Error(err.(error), "namespace", env.Namespace)
+		default:
+			panic(err)
 		}
 	}
 }
