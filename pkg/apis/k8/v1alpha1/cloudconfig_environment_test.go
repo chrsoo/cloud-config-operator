@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,11 +22,7 @@ func TestReconcile(t *testing.T) {
 	env := getTestEnv(t)
 	assert.Equal(t, []string{"article", "authz"}, env.getApps())
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go env.reconcile(&wg)
-	wg.Wait()
-
+	go env.reconcile()
 }
 
 func TestAppendYAMLDoc(t *testing.T) {
