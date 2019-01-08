@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"sync"
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
@@ -10,12 +9,18 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 var client = http.Client{
 	Timeout: time.Duration(10 * time.Second),
 }
+
+const (
+	// SecretPath is the directory where secretes are mounted
+	SecretPath = "/var/secret/config"
+)
 
 // Environment defines a CloudConfig environment configuration
 type Environment struct {
@@ -42,7 +47,7 @@ type Environment struct {
 
 	// Cloud Config Server secret containing username and password
 	// FIXME use a path, file or whatever
-	Credentials string `json:"credentials,omitempty"`
+	Secret string `json:"secret,omitempty"`
 
 	// app spec file name, defaults to 'deployment.yaml'
 	SpecFile string `json:"specFile,omitempty"`
@@ -223,21 +228,20 @@ func (env Environment) getAppConfigFile(app string, file string) []byte {
 }
 
 func (env Environment) configureAuth(request *http.Request) {
-	if env.Credentials == "" {
+	if env.Secret == "" {
 		return
 	}
 
-	if exists, err := testPath(env.Credentials); !exists || err != nil {
-		// TODO log error
+	if exists, err := testPath(env.Secret); !exists || err != nil {
 		if exists {
 			panic(err)
 		} else {
-			panic("Credenitals directory '" + env.Credentials + "' does not exist!")
+			panic("Credenitals directory '" + env.Secret + "' does not exist!")
 		}
 	}
 
 	// check if we have a token for bearer auth
-	tokenPath := env.Credentials + "/token"
+	tokenPath := env.Secret + "/token"
 	if exists, _ := testPath(tokenPath); exists {
 		token := readFile(tokenPath)
 		request.Header.Set("Authorization", "Bearer "+token)
@@ -245,8 +249,8 @@ func (env Environment) configureAuth(request *http.Request) {
 	}
 
 	// fall back to Basic Auth
-	username := readFile(env.Credentials + "/username")
-	password := readFile(env.Credentials + "/password")
+	username := readFile(env.Secret + "/username")
+	password := readFile(env.Secret + "/password")
 	request.SetBasicAuth(username, password)
 }
 

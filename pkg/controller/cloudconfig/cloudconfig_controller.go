@@ -161,14 +161,16 @@ func newCronJobForCR(cr *k8v1alpha1.CloudConfig) (*cronv1.CronJob, error) {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
-	return &cronv1.CronJob{
+
+	job := &cronv1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-cron",
 			Namespace: cr.Namespace,
 			Labels:    labels,
 		},
 		Spec: cronv1.CronJobSpec{
-			Schedule: cr.Spec.Schedule,
+			Schedule:          cr.Spec.Schedule,
+			ConcurrencyPolicy: cronv1.ForbidConcurrent,
 			JobTemplate: cronv1.JobTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      cr.Name + "-job",
@@ -199,5 +201,29 @@ func newCronJobForCR(cr *k8v1alpha1.CloudConfig) (*cronv1.CronJob, error) {
 				},
 			},
 		},
-	}, nil
+	}
+
+	// TODO rename 'Crecdentials' to 'Secret'
+	// TODO if a secret is defined verify that it exists and panic if not, retry after one minute, five?
+	if cr.Spec.Secret != "" {
+		job.Spec.JobTemplate.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "cloud-config-secret",
+				MountPath: k8v1alpha1.SecretPath,
+				ReadOnly:  true,
+			},
+		}
+		job.Spec.JobTemplate.Spec.Template.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "cloud-config-secret",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: cr.Spec.Secret,
+					},
+				},
+			},
+		}
+	}
+
+	return job, nil
 }

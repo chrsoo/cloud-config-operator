@@ -1,12 +1,12 @@
 package v1alpha1
 
 import (
-	"sync"
 	"encoding/base64"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -137,28 +137,28 @@ func TestInterfaceToStringSlice(t *testing.T) {
 
 func TestConfigureAuth(t *testing.T) {
 	request, _ := http.NewRequest("GET", "http://test.com", nil)
-	env := Environment{ Credentials: "bogus-path" }
-	assert.Panics(t, func(){ env.configureAuth(request) }, "Expected panic when the path does not exist")
+	env := Environment{Secret: "bogus-path"}
+	assert.Panics(t, func() { env.configureAuth(request) }, "Expected panic when the path does not exist")
 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "cloud-config-test-")
 	assert.Nil(t, err, "Could not create temporary credentials dir")
 	defer os.RemoveAll(tmpDir)
 
-	env = Environment{ Credentials: tmpDir}
-	assert.Panics(t, func(){ env.configureAuth(request)}, "Expected panic when the username secret does not exist")
+	env = Environment{Secret: tmpDir}
+	assert.Panics(t, func() { env.configureAuth(request) }, "Expected panic when the username secret does not exist")
 
-	err = ioutil.WriteFile(tmpDir + "/username", []byte("anonymous"), os.ModePerm)
+	err = ioutil.WriteFile(tmpDir+"/username", []byte("anonymous"), os.ModePerm)
 	assert.Nil(t, err, "Could not write username secret")
-	assert.Panics(t, func(){ env.configureAuth(request)}, "Expected panic when the pasword secret does not exist")
+	assert.Panics(t, func() { env.configureAuth(request) }, "Expected panic when the pasword secret does not exist")
 
-	err = ioutil.WriteFile(tmpDir + "/password", []byte("secret"), os.ModePerm)
+	err = ioutil.WriteFile(tmpDir+"/password", []byte("secret"), os.ModePerm)
 	assert.Nil(t, err, "Could not write password secret")
 	env.configureAuth(request)
 	auth := "Basic " + base64.StdEncoding.EncodeToString([]byte("anonymous:secret"))
 	assert.Equal(t, auth, request.Header.Get("Authorization"),
-	"Basic auth should be configured if username and password secrets exist")
+		"Basic auth should be configured if username and password secrets exist")
 
-	err = ioutil.WriteFile(tmpDir + "/token", []byte("TOKEN"), os.ModePerm)
+	err = ioutil.WriteFile(tmpDir+"/token", []byte("TOKEN"), os.ModePerm)
 	assert.Nil(t, err, "Could not write token secret")
 	env.configureAuth(request)
 	assert.Equal(t, "Bearer TOKEN", request.Header.Get("Authorization"), "A token secret should override basic auth ")

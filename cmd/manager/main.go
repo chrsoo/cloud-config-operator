@@ -1,6 +1,9 @@
 package main
 
 import (
+	"strings"
+	"errors"
+	"reflect"
 	"context"
 	"flag"
 	"fmt"
@@ -50,11 +53,28 @@ func main() {
 		// parse the value as a JSON CloudConfigSpec
 		var config v1alpha1.CloudConfigSpec
 		if err := json.Unmarshal(spec, &config); err != nil {
-			log.Error(err, "Could not unmarshal CloudConfigSpec:\n%s", *reconcile)
-			os.Exit(1)
+			log.Error(err, "Could not unmarshal CloudConfigSpec config", "config", *reconcile)
+			// Exit cleanly as we will otherwise fail the cron job causing an immediate retry
+			os.Exit(0)
 		}
+
+		// Recover and report managed panics
+		defer func() {
+			if err := recover(); err != nil {
+				switch t := err.(type) {
+				case string:
+					log.Info(err.(string))
+					os.Exit(0)
+				case error:
+					log.Error(err.(error), "Unfettered panic!")
+					os.Exit(1)
+				default:
+					panic(err)
+				}
+			}
+		}()
+
 		// reconcile the CloudConfigSpec
-		// TODO improve logging, error handling and think about exit codes!
 		config.Reconcile()
 		os.Exit(0)
 	}
