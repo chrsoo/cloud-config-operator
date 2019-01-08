@@ -75,7 +75,7 @@ Planned release versions:
 
 - [ ] v0.1 `CloudConfig` CRD for managing Spring Cloud Config apps
 - [ ] v0.2 `CloudConfigServer` CRD for managing a Spring Cloud Config server
-- [ ] v1.0 The first stable version of `cloud-config-operator' resource API
+- [ ] v1.0 The first stable version of `cloud-config-operator` resource API
 
 ## References
 * [operator-sdk](https://github.com/operator-framework/operator-sdk)
