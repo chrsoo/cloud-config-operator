@@ -19,7 +19,7 @@ const (
   `
 	TestSpec = `
     server: cloud-config-server   # Cloud Config Server name or URL
-    credentials: cloud-config     # Cloud Config Server secret
+    secret: cloud-config          # Cloud Config Server secret
     label: master                 # label used for all apps, defaults to 'master'
     specFile: deployment.yaml     # app spec file, defaults to 'deployment.yaml'
     appName: dms-cluster          # application name, defaults to the CloudConfig name

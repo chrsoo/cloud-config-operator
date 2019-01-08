@@ -1,9 +1,9 @@
 package v1alpha1
 
 import (
+	httpmock "gopkg.in/jarcoal/httpmock.v1"
 	"os/exec"
 	"testing"
-	httpmock "gopkg.in/jarcoal/httpmock.v1"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +33,7 @@ func TestReconcileSpec(t *testing.T) {
 	activateAndMockConfigServerResponses(t)
 	defer httpmock.DeactivateAndReset()
 	// avoid creating credentials on the file system!
-	actual.Credentials = ""
+	actual.Secret = ""
 	// mock kubectl command calls
 	execCommand = fakeExecCommand
 	defer func() { execCommand = exec.Command }()
