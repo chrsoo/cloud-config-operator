@@ -37,11 +37,34 @@ func (spec CloudConfigSpec) GetEnvironment(key string) *Environment {
 
 // Reconcile the cloud configuration with the cluster state
 func (spec CloudConfigSpec) Reconcile() {
+	fail := make(chan bool, len(spec.Environments))
 	var wg sync.WaitGroup
 	for key := range spec.Environments {
 		env := spec.GetEnvironment(key)
 		wg.Add(1)
-		go env.reconcile(&wg)
+		go func() {
+			defer env.finalize(&wg, &fail)
+			env.reconcile()
+		}()
 	}
+
 	wg.Wait()
+	if len(fail) > 0 {
+		panic("Reconcilation failed")
+	}
+}
+
+func (env Environment) finalize(wg *sync.WaitGroup, fail *chan bool) {
+	defer wg.Done()
+	if err := recover(); err != nil {
+		switch err.(type) {
+			case string:
+				log.Info(err.(string), "namespace", env.Namespace)
+			case error:
+				log.Error(err.(error), "namespace", env.Namespace)
+				*fail <- true
+			default:
+				panic(err)
+		}
+	}
 }

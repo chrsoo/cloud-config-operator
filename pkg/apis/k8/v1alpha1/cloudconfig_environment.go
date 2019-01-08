@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -56,8 +55,7 @@ type Environment struct {
 	AppList string `json:"appList,omitempty"`
 }
 
-func (env Environment) reconcile(wg *sync.WaitGroup) {
-	defer wg.Done()
+func (env Environment) reconcile() {
 	env.ensureNamespace()
 
 	// get the apps and order alphabetically to maintain consistency when applying the k8Config
