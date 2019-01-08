@@ -225,12 +225,23 @@ func (env Environment) getAppConfigFile(app string, file string) []byte {
 	return env.execute(http.MethodGet, url)
 }
 
+// getSecretPath returns a path to the secrets directory
+func (env Environment) getSecretPath() string {
+	// TODO switch to the paths package
+	if strings.HasPrefix(env.Secret, "/") {
+		return strings.TrimRight(env.Secret, "/")
+	}
+
+	return "/" + strings.Trim(env.Secret, "/")
+}
+
 func (env Environment) configureAuth(request *http.Request) {
 	if env.Secret == "" {
 		return
 	}
 
-	if exists, err := testPath(env.Secret); !exists || err != nil {
+	secretPath := env.getSecretPath()
+	if exists, err := testPath(secretPath); !exists || err != nil {
 		if exists {
 			panic(err)
 		} else {
@@ -239,7 +250,7 @@ func (env Environment) configureAuth(request *http.Request) {
 	}
 
 	// check if we have a token for bearer auth
-	tokenPath := env.Secret + "/token"
+	tokenPath := secretPath + "/token"
 	if exists, _ := testPath(tokenPath); exists {
 		token := readFile(tokenPath)
 		request.Header.Set("Authorization", "Bearer "+token)
@@ -247,8 +258,8 @@ func (env Environment) configureAuth(request *http.Request) {
 	}
 
 	// fall back to Basic Auth
-	username := readFile(env.Secret + "/username")
-	password := readFile(env.Secret + "/password")
+	username := readFile(secretPath + "/username")
+	password := readFile(secretPath + "/password")
 	request.SetBasicAuth(username, password)
 }
 
@@ -259,7 +270,6 @@ func (env Environment) execute(method string, url string) []byte {
 		panic(err)
 	}
 	env.configureAuth(request)
-
 	// execute the request
 	resp, err := client.Do(request)
 	if err != nil {
@@ -267,11 +277,14 @@ func (env Environment) execute(method string, url string) []byte {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		panic("Unhandled HTTP response '" + resp.Status + "'")
+	}
+
 	// read the body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		// TODO handle IO errors properly
-		return []byte{}
+		panic(err)
 	}
 
 	return body
