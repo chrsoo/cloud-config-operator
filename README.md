@@ -2,9 +2,6 @@
 Provision Kubernetes applications using Spring Cloud Config Server
 with a GitOps approach.
 
-__This is currently just a skeleton project!__
-
-
 ## Custom Resource Definitions
 ### CloudConfig
 The CloudConfig CRD defines a Cloud Config Server configuration that Spring Cloud
@@ -26,13 +23,13 @@ metadata:
   name: dms                     # System or Application name
 spec:
   server: cloud-config-server   # Cloud Config Server name or URL
-  credentials: cloud-config     # Cloud Config Server secret
+  secret: cloud-config          # Cloud Config Server secret
   label: master                 # label used for all apps, defaults to 'master'
   specFile: deployment.yaml     # app spec file, defaults to 'deployment.yaml'
-  appName: dms-cluster          # application name, defaults to the CloudConfig name
-  appList: services             # application list property
+  appName: dms-cluster          # main app name, defaults to the CloudConfig name
+  appList: services             # app list property
   schedule: "*/1 * * * *"       # cron job schedule
-  environments:                 # Environments where apps are managed, global values can be overridden
+  environments:                 # app environments, global values can be overridden
     dev:                        # environment key
       name: Development         # environment name, defaults to the key value
       profile: [ vsg, dev ]     # cloud config profiles for the env
@@ -59,19 +56,27 @@ metadata:
 spec:
   # TODO provide sample configuration of a Spring Cloud Server
 ```
-## Implementation Notes
+## Project Setup
+The following instructions assume Mac OS X with [Home Brew](https://brew.sh/) and a local [Minikube](https://github.com/kubernetes/minikube) as the development Kubernetes cluster:
 
-* For each CloudConfig object the operator maintains a CronJob that reconciles the CloudConfig
-* The CronJob runs the Cloud Config Operator Docker image with the `--reconcile --config={...}` parameters
-* The value of the `--config` parameter is the JSON serialized CloudConfig object
+    brew install cask minikube
+    brew install kubernetes-cli
+    brew install docker
+    brew install golang dep
 
-## TODO
+Once you have a working Go environment you can get the project using
 
-- [x] Apply specification file for each app
-- [x] Implement `CloudConfig.Reconcile()`
-- [x] Adapt `main()` to support reconciliation (`--reconcile={json}`)
-- [ ] Add external dependencies to vendor branches
-- [ ] Change Cron Job container to use CloudConfig image
+    go get github.com/chrsoo/cloud-config-operator
+
+__To setup the Operator SDK please follow the [Quick Start instsructions on GitHub](https://github.com/operator-framework/operator-sdk#quick-start)!__
+
+## Roadmap
+Planned release versions:
+
+- [ ] v0.1 `CloudConfig` CRD for managing Spring Cloud Config apps
+- [ ] v0.2 `CloudConfigServer` CRD for managing a Spring Cloud Config server
+- [ ] v1.0 The first stable version of `cloud-config-operator' resource API
 
 ## References
+* [operator-sdk](https://github.com/operator-framework/operator-sdk)
 * [Quick Intro to Spring Cloud Config](https://www.baeldung.com/spring-cloud-configuration)
