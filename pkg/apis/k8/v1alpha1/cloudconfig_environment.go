@@ -154,24 +154,19 @@ func (env Environment) apply(config *[]byte) {
 		"-f",
 		"-")
 	cmd.Stdin = bytes.NewReader(*config)
-	cmdString := strings.Join(cmd.Args, " ")
-
-	log.Info(fmt.Sprintf("Reconciling environment '%s'", env.Namespace),
-		"namespace", env.Namespace,
-		"command", cmdString)
 
 	var out []byte
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Error(err, fmt.Sprintf("Could not reconcile environment '%s'", env.Namespace),
 			"namespace", env.Namespace,
-			"command", cmdString,
+			"command", strings.Join(cmd.Args, " "),
 			"output", string(out))
 		panic(err)
 	}
 
 	log.Info(fmt.Sprintf("Reconciled environment '%s'", env.Namespace),
 		"namespace", env.Namespace,
-		"command", cmdString,
+		"command", strings.Join(cmd.Args, " "),
 		"output", string(out))
 }
 
