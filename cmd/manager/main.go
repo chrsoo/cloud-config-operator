@@ -1,9 +1,6 @@
 package main
 
 import (
-	"strings"
-	"errors"
-	"reflect"
 	"context"
 	"flag"
 	"fmt"
@@ -37,7 +34,6 @@ func printVersion() {
 
 func main() {
 	flag.Parse()
-
 	// The logger instantiated here can be changed to any logger
 	// implementing the logr.Logger interface. This logger will
 	// be propagated through the whole operator, generating
@@ -49,33 +45,18 @@ func main() {
 	// -- CloudConfig reconciliation process
 
 	if *reconcile != "" {
-		spec := []byte(*reconcile)
 		// parse the value as a JSON CloudConfigSpec
 		var config v1alpha1.CloudConfigSpec
+		spec := []byte(*reconcile)
 		if err := json.Unmarshal(spec, &config); err != nil {
 			log.Error(err, "Could not unmarshal CloudConfigSpec config", "config", *reconcile)
-			// Exit cleanly as we will otherwise fail the cron job causing an immediate retry
-			os.Exit(0)
 		}
-
-		// Recover and report managed panics
-		defer func() {
-			if err := recover(); err != nil {
-				switch t := err.(type) {
-				case string:
-					log.Info(err.(string))
-					os.Exit(0)
-				case error:
-					log.Error(err.(error), "Unfettered panic!")
-					os.Exit(1)
-				default:
-					panic(err)
-				}
-			}
-		}()
-
+		// Confifure the HTTP Client
+		config.Init()
 		// reconcile the CloudConfigSpec
 		config.Reconcile()
+		// Exit cleanly even if there is an error as we will otherwise fail the cron job and
+		// thus potentially causing an immediate retry
 		os.Exit(0)
 	}
 
