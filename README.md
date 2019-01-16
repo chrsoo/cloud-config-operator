@@ -80,3 +80,4 @@ Planned release versions:
 ## References
 * [operator-sdk](https://github.com/operator-framework/operator-sdk)
 * [Quick Intro to Spring Cloud Config](https://www.baeldung.com/spring-cloud-configuration)
+* [Best practices for building Kubernetes Operators and stateful apps](https://cloud.google.com/blog/products/containers-kubernetes/best-practices-for-building-kubernetes-operators-and-stateful-apps)
