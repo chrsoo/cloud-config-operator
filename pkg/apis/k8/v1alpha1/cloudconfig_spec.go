@@ -49,9 +49,11 @@ func (spec CloudConfigSpec) GetEnvironment(key string) *Environment {
 // Reconcile the cloud configuration with the cluster state
 func (spec CloudConfigSpec) Reconcile() {
 	fail := make(chan string, len(spec.Environments))
+	envs := make([]string, 0, len(spec.Environments))
 	var wg sync.WaitGroup
 	for key := range spec.Environments {
 		env := spec.GetEnvironment(key)
+		envs = append(envs, env.Name)
 		wg.Add(1)
 		go func() {
 			defer env.finalize(&wg, &fail)
@@ -66,9 +68,11 @@ func (spec CloudConfigSpec) Reconcile() {
 		for e := range fail {
 			failedEnvs = append(failedEnvs, e)
 		}
-		msg := fmt.Sprintf("Reconcilation failed for %d out of %d environments", failed, len(spec.Environments))
+		msg := fmt.Sprintf("Reconcilation failed for %d out of %d environments of the '%s' Cloud Config App", failed, len(spec.Environments), spec.Name)
 		err := fmt.Errorf("Reconcilation failed for %v", failedEnvs)
 		log.Error(err, msg)
+	} else {
+		log.Info(fmt.Sprintf("Reconciled all %d environments of the '%s' Cloud Config App", len(spec.Environments), spec.Name))
 	}
 }
 
