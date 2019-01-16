@@ -74,19 +74,19 @@ func TestGetApps(t *testing.T) {
 	env := getTestEnv(t)
 	assert.Equal(t, []string{"article", "authz"}, env.getApps())
 
-	httpmock.RegisterResponder("GET", TestBaseURL+"dms-cluster/p1,p2/label",
+	httpmock.RegisterResponder("GET", TestBaseURL+"label/cluster-p1,p2.yaml",
 		httpmock.NewStringResponder(200, `{"services": "myapp", "key": "value"}`))
 	assert.Equal(t, []string{"myapp"}, env.getApps())
 
-	httpmock.RegisterResponder("GET", TestBaseURL+"dms-cluster/p1,p2/label",
+	httpmock.RegisterResponder("GET", TestBaseURL+"label/cluster-p1,p2.yaml",
 		httpmock.NewStringResponder(200, `{"services": { "nested": "value"}, "key": "value"}`))
 	assert.Equal(t, []string{}, env.getApps())
 
-	httpmock.RegisterResponder("GET", TestBaseURL+"dms-cluster/p1,p2/label",
+	httpmock.RegisterResponder("GET", TestBaseURL+"label/cluster-p1,p2.yaml",
 		httpmock.NewStringResponder(200, `[{"services": { "nested": "value"}, "key": "value"}]`))
 	assert.Equal(t, []string{}, env.getApps(), "Does not handle invalid config")
 
-	httpmock.RegisterResponder("GET", TestBaseURL+"dms-cluster/p1,p2/label",
+	httpmock.RegisterResponder("GET", TestBaseURL+"label/cluster-p1,p2.yaml",
 		httpmock.NewStringResponder(200, ``))
 	assert.Equal(t, []string{}, env.getApps(), "Does not handle empty config")
 
@@ -100,7 +100,7 @@ func TestGetAppConfig(t *testing.T) {
 
 	env := getTestEnv(t)
 
-	assert.Equal(t, `{"services": ["article", "authz"], "key": "value"}`, string(env.getAppConfig("dms-cluster")),
+	assert.Equal(t, `{"services": ["article", "authz"], "key": "value"}`, string(env.getAppConfig("cluster")),
 		"JSON config not returned for environment")
 
 	assert.Equal(t, `{"key": "value"}`, string(env.getAppConfig("anotherApp")))
@@ -112,7 +112,7 @@ func TestGetAppConfigFile(t *testing.T) {
 
 	env := getTestEnv(t)
 
-	assert.Equal(t, `YAML YAML YAML`, string(env.getAppConfigFile("dms-cluster", env.SpecFile)),
+	assert.Equal(t, `YAML YAML YAML`, string(env.getAppConfigFile("cluster", env.SpecFile)),
 		"YAML config file not returned from enironment")
 }
 
@@ -159,15 +159,45 @@ func TestConfigureAuth(t *testing.T) {
 	assert.Equal(t, "Bearer TOKEN", request.Header.Get("Authorization"), "A token secret should override basic auth ")
 }
 
+func TestGetSecretPath(t *testing.T) {
+	env := getTestEnv(t)
+	env.Secret = "secret"
+	assert.Equal(t, SecretPathPrefix+env.Secret, env.getSecretPath())
+
+	env.Secret = "/some/arbitrary/path"
+	assert.Equal(t, "/some/arbitrary/path", env.getSecretPath(), "The secret path should be the secret if it contains a slash")
+
+	env.Secret = "/some/arbitrary/path/"
+	assert.Equal(t, "/some/arbitrary/path", env.getSecretPath(), "Trailing slashes should be trimmed off the secret path")
+
+}
+
+func TestConfigure(t *testing.T) {
+	env := Environment{}
+	env.Configure()
+
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "cloud-config-test-")
+	assert.Nil(t, err, "Could not create temporary credentials dir")
+	defer os.RemoveAll(tmpDir)
+
+	env = Environment{Insecure: true}
+	env.Configure()
+	env = Environment{Secret: tmpDir}
+	env.Configure()
+	env.Insecure = true
+	env.Configure()
+	// assert.Panics(t, func() { env.Configure() }, "Expected panic when the username secret does not exist")
+}
+
 // -- test harness
 
 func activateAndMockConfigServerResponses(t *testing.T) {
 	httpmock.Activate()
 
-	httpmock.RegisterResponder("GET", TestBaseURL+"dms-cluster/p1,p2/label",
+	httpmock.RegisterResponder("GET", TestBaseURL+"label/cluster-p1,p2.yaml",
 		httpmock.NewStringResponder(200, `{"services": ["article", "authz"], "key": "value"}`))
 
-	httpmock.RegisterResponder("GET", TestBaseURL+"dms-cluster/p1,p2/label/deployment.yaml",
+	httpmock.RegisterResponder("GET", TestBaseURL+"cluster/p1,p2/label/deployment.yaml",
 		httpmock.NewStringResponder(200, `YAML YAML YAML`))
 
 	httpmock.RegisterResponder("GET", TestBaseURL+"authz/p1,p2/label/deployment.yaml",

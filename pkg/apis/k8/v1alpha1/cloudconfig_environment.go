@@ -2,27 +2,35 @@ package v1alpha1
 
 import (
 	"bytes"
-	"encoding/json"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os/exec"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/ghodss/yaml"
 )
 
-var client = http.Client{
-	Timeout: time.Duration(10 * time.Second),
-}
-
 const (
-	// SecretPath is the directory where secretes are mounted
-	SecretPath = "/var/secret/config"
+	// SecretPathPrefix is the directory where secretes are mounted
+	SecretPathPrefix = "/var/secret/config/"
 )
 
 // Environment defines a CloudConfig environment configuration
 type Environment struct {
+	httpClient http.Client
+
+	// If Insecure is 'true' certificates are not required for
+	// servers outside the cluster and SSL errors are ignored.
+	Insecure bool `json:"insecure,omitempty"`
+
 	// Key for the environment
 	Key string `json:"key,omitempty"`
 
@@ -55,7 +63,76 @@ type Environment struct {
 	AppList string `json:"appList,omitempty"`
 }
 
+// Configure initializes the environment for fist use
+func (env Environment) Configure() {
+	// TODO make HTTP Timeout configuratble
+	client := &http.Client{Timeout: time.Duration(10 * time.Second)}
+
+	// TODO add proxy support and proxy authentication
+	if env.Secret != "" {
+		tlsConfig := &tls.Config{}
+		env.configureTruststore(tlsConfig)
+		env.configureSSLClientCert(tlsConfig)
+		tlsConfig.BuildNameToCertificate()
+		transport := &http.Transport{TLSClientConfig: tlsConfig}
+		client.Transport = transport
+		log.Info("Configured SSL from secret", "secret", env.Secret)
+	}
+
+	if env.Insecure {
+		if tr, ok := client.Transport.(*http.Transport); ok {
+			tr.TLSClientConfig.InsecureSkipVerify = true
+		} else {
+			tlsConfig := &tls.Config{InsecureSkipVerify: true}
+			client.Transport = &http.Transport{TLSClientConfig: tlsConfig}
+		}
+		log.Info("Skipping SSL verification!!!")
+	}
+	log.Info("Configured environment", "name", env.Name, "key", env.Key, "namespace", env.Namespace)
+}
+
+func (env Environment) configureSSLClientCert(tlsConfig *tls.Config) {
+	certFile := env.getSecretPath() + "cert.pem"
+	keyFile := env.getSecretPath() + "key.pem"
+
+	if !pathExists(certFile) && !pathExists(keyFile) {
+		return
+	}
+
+	// Load client cert
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		panic("Could not load client certificcate: " + err.Error())
+	}
+	// Add the client certificate
+	tlsConfig.Certificates = []tls.Certificate{cert}
+	// TODO log the name of the client as seen in the cert
+	log.Info("Using SSL Client cerfificate from cert.pem and key.pem secrets")
+}
+
+func (env Environment) configureTruststore(tlsConfig *tls.Config) {
+	caFile := env.getSecretPath() + "ca.pem"
+	if !pathExists(caFile) {
+		return
+	}
+	caCert, err := ioutil.ReadFile(caFile)
+	if err != nil {
+		panic("Could not load CA file: " + err.Error())
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	tlsConfig.RootCAs = caCertPool
+
+	log.Info("Using CA from ca.pem secret")
+}
+
 func (env Environment) reconcile() {
+	// FIXME make sure that the check works for the DefaultClient
+	if &env.httpClient == http.DefaultClient {
+		err := errors.New("environment not initialized, call Init() before first use")
+		panic(err)
+	}
 	env.ensureNamespace()
 
 	// get the apps and order alphabetically to maintain consistency when applying the k8Config
@@ -141,9 +218,9 @@ func (env Environment) apply(config []byte) {
 		"-")
 	cmd.Stdin = bytes.NewReader(config)
 
-	log.Info("Applying config for namespace", "namespace",
-		env.Namespace, "command",
-		strings.Join(cmd.Args, " "))
+	log.Info("Applying config for namespace",
+		"namespace", env.Namespace,
+		"command", strings.Join(cmd.Args, " "))
 
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Error(err, "Could not apply config in namespace",
@@ -157,14 +234,16 @@ func (env Environment) getApps() []string {
 
 	body := env.getAppConfig(env.AppName)
 	if len(body) == 0 {
-		// TODO Log warning as there is no config for the app
+		err := fmt.Errorf("App configuration for '%s' not found for %s", env.AppName, env.Key)
+		log.Error(err, "Could not get the list of applications", "namespace", env.Namespace)
 		return []string{}
 	}
 
 	// marshal the body as a map
 	var m map[string]interface{}
-	if err := json.Unmarshal(body, &m); err != nil {
-		// TODO log warning as the config cannot be parsed as a map
+	if err := yaml.Unmarshal(body, &m); err != nil {
+		err := fmt.Errorf("Could not marshal configuration as map")
+		log.Error(err, "Could not get the list of applications", "namespace", env.Namespace)
 		return []string{}
 	}
 
@@ -172,16 +251,22 @@ func (env Environment) getApps() []string {
 		kind := reflect.ValueOf(apps).Kind()
 		switch kind {
 		case reflect.Slice:
+			log.Info(fmt.Sprintf("Apps: %v", apps), "namespace", env.Namespace)
 			return interfaceToStringSlice(apps.([]interface{}))
 		case reflect.String:
+			log.Info(fmt.Sprintf("Apps: [%v]", apps), "namespace", env.Namespace)
 			// make sure we return a slice even if there is a single string value
 			return []string{apps.(string)}
 		default:
-			// TODO Log warning as the AppList field points to a non valid list of apps
+			err := fmt.Errorf("Value of AppList field '%s' should be a YAML list or string, found %T", env.AppList, apps)
+			log.Error(err, "Could not get the list of applications", "namespace", env.Namespace)
 			return []string{}
 		}
 	} else {
-		// TODO Log warning as there is no AppsList key in the map
+		err := fmt.Errorf("The AppList field '%s' does not exist in the app configuration for '%s'", env.AppList, env.AppName)
+		log.Error(err, "Could not get the list of applications",
+			"namespace", env.Namespace,
+			"config", string(body))
 		return []string{}
 	}
 
@@ -202,8 +287,10 @@ func (env Environment) baseURL() string {
 
 	if strings.HasPrefix(env.Server, "http") {
 		baseURL = env.Server
-	} else {
+	} else if env.Insecure {
 		baseURL = "http://" + env.Server
+	} else {
+		baseURL = "https://" + env.Server
 	}
 
 	if !strings.HasSuffix(baseURL, "/") {
@@ -213,9 +300,9 @@ func (env Environment) baseURL() string {
 	return baseURL
 }
 
-// GetAppConfig retrieves the JSON configuration for the given path using the Spring Cloud Config URI pattern `/{app}/{profile}/{label}`
+// GetAppConfig retrieves the JSON configuration for the given path using the Spring Cloud Config URI pattern `/{label}/{app}-{profile}.yml`
 func (env Environment) getAppConfig(app string) []byte {
-	url := env.baseURL() + app + "/" + strings.Join(env.Profile, ",") + "/" + env.Label
+	url := env.baseURL() + env.Label + "/" + app + "-" + strings.Join(env.Profile, ",") + ".yaml"
 	return env.execute(http.MethodGet, url)
 }
 
@@ -227,12 +314,15 @@ func (env Environment) getAppConfigFile(app string, file string) []byte {
 
 // getSecretPath returns a path to the secrets directory
 func (env Environment) getSecretPath() string {
-	// TODO switch to the paths package
-	if strings.HasPrefix(env.Secret, "/") {
+	// TODO switch to the paths package?
+
+	// We assume the secret is a path if it contains at least one slash
+	if strings.Contains(env.Secret, "/") {
 		return strings.TrimRight(env.Secret, "/")
 	}
 
-	return "/" + strings.Trim(env.Secret, "/")
+	// Else we assume that the secret is a K8 secret mounted at the standard path
+	return SecretPathPrefix + strings.Trim(env.Secret, "/")
 }
 
 func (env Environment) configureAuth(request *http.Request) {
@@ -241,17 +331,13 @@ func (env Environment) configureAuth(request *http.Request) {
 	}
 
 	secretPath := env.getSecretPath()
-	if exists, err := testPath(secretPath); !exists || err != nil {
-		if exists {
-			panic(err)
-		} else {
-			panic("Credenitals directory '" + env.Secret + "' does not exist!")
-		}
+	if !pathExists(secretPath) {
+		panic("Credenitals directory '" + env.Secret + "' does not exist!")
 	}
 
 	// check if we have a token for bearer auth
 	tokenPath := secretPath + "/token"
-	if exists, _ := testPath(tokenPath); exists {
+	if pathExists(tokenPath) {
 		token := readFile(tokenPath)
 		request.Header.Set("Authorization", "Bearer "+token)
 		return
@@ -264,16 +350,29 @@ func (env Environment) configureAuth(request *http.Request) {
 }
 
 func (env Environment) execute(method string, url string) []byte {
-	// TODO log url
 	request, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		panic(err)
 	}
+
+	log.Info(fmt.Sprintf("%s %s", method, request.URL.Path),
+		"host", request.URL.Host,
+		"method", request.Method,
+		"scheme", request.URL.Scheme,
+		"path", request.URL.Path,
+		"port", request.URL.Port())
+
 	env.configureAuth(request)
 	// execute the request
-	resp, err := client.Do(request)
+	resp, err := env.httpClient.Do(request)
 	if err != nil {
-		panic(err)
+		if _, ok := err.(*net.DNSError); ok {
+			// Using a string indicates that we consider the error handled
+			panic(err.Error)
+		} else {
+			// Using an error instance indicates that we consider the error unhandled
+			panic(err)
+		}
 	}
 	defer resp.Body.Close()
 

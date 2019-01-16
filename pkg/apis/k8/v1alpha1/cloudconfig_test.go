@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	TestBaseURL = "http://test.com/"
+	TestBaseURL = "https://test.com/"
 	TestEnv     = `
     server:   test.com
     profile:  [ p1, p2 ]
     label:    label
     specFile: deployment.yaml
-    appName:  dms-cluster
+    appName:  cluster
     appList:  services
   `
 	TestSpec = `
@@ -22,20 +22,16 @@ const (
     secret: cloud-config          # Cloud Config Server secret
     label: master                 # label used for all apps, defaults to 'master'
     specFile: deployment.yaml     # app spec file, defaults to 'deployment.yaml'
-    appName: dms-cluster          # application name, defaults to the CloudConfig name
+    appName: cluster              # application name, defaults to the CloudConfig name
     appList: services             # application list property of AppName app
 
     environments:                 # Environments where apps are managed, global values can be overridden
       dev:                        # environment key
         name: Development         # environment name, defaults to the key value
-        profile: [ vsg, dev ]     # cloud config profiles for the env
+        profile: [ dev ]          # cloud config profiles for the env
         label: develop            # optionally override the global label
-      qua:
-        profile: [ vsg, qua ]
-      val:
-        profile: [ vsg, val ]
       prd:
-        profile: [ vsg, prd ]
+        profile: [ prd ]
     `
 )
 
