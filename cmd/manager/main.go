@@ -87,6 +87,10 @@ func main() {
 	defer r.Unset()
 
 	// Create a new Cmd to provide shared dependencies and start components
+	// By default this will be the namespace that the operator is running in. To watch all
+	// namespaces leave the namespace option empty:
+	// mgr, err := manager.New(cfg, manager.Options{Namespace: ""})
+	// TODO decice if we will watch all namespaces or only one
 	mgr, err := manager.New(cfg, manager.Options{Namespace: namespace})
 	if err != nil {
 		log.Error(err, "")
