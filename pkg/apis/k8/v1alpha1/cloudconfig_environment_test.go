@@ -185,23 +185,6 @@ func TestGetSecretPath(t *testing.T) {
 
 }
 
-func TestConfigure(t *testing.T) {
-	env := Environment{}
-	env.Configure()
-
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "cloud-config-test-")
-	assert.Nil(t, err, "Could not create temporary credentials dir")
-	defer os.RemoveAll(tmpDir)
-
-	env = Environment{Insecure: true}
-	env.Configure()
-	env = Environment{Secret: tmpDir}
-	env.Configure()
-	env.Insecure = true
-	env.Configure()
-	// assert.Panics(t, func() { env.Configure() }, "Expected panic when the username secret does not exist")
-}
-
 // -- test harness
 
 func activateAndMockConfigServerResponses(t *testing.T) {

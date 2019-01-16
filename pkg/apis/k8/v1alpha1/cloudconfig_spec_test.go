@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"os"
+	"io/ioutil"
 	"os/exec"
 	"testing"
 
@@ -39,4 +41,21 @@ func TestReconcileSpec(t *testing.T) {
 	defer func() { execCommand = exec.Command }()
 
 	actual.Reconcile()
+}
+
+func TestInit(t *testing.T) {
+	spec := CloudConfigSpec{}
+	spec.Init()
+
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "cloud-config-test-")
+	assert.Nil(t, err, "Could not create temporary credentials dir")
+	defer os.RemoveAll(tmpDir)
+
+	spec = CloudConfigSpec{Environment: Environment{Insecure: true}}
+	spec.Init()
+	spec = CloudConfigSpec{Environment: Environment{Secret: tmpDir}}
+	spec.Init()
+	spec.Insecure = true
+	spec.Init()
+	// assert.Panics(t, func() { spec.Init() }, "Expected panic when the username secret does not exist")
 }

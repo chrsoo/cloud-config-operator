@@ -2,9 +2,6 @@ package v1alpha1
 
 import (
 	"bytes"
-	"crypto/tls"
-	"crypto/x509"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -13,7 +10,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/ghodss/yaml"
 )
@@ -23,10 +19,10 @@ const (
 	SecretPathPrefix = "/var/run/secret/cloud-config/"
 )
 
+var httpClient http.Client
+
 // Environment defines a CloudConfig environment configuration
 type Environment struct {
-	httpClient http.Client
-
 	// If Insecure is 'true' certificates are not required for
 	// servers outside the cluster and SSL errors are ignored.
 	Insecure bool `json:"insecure,omitempty"`
@@ -63,76 +59,7 @@ type Environment struct {
 	AppList string `json:"appList,omitempty"`
 }
 
-// Configure initializes the environment for fist use
-func (env Environment) Configure() {
-	// TODO make HTTP Timeout configuratble
-	client := &http.Client{Timeout: time.Duration(10 * time.Second)}
-
-	// TODO add proxy support and proxy authentication
-	if env.Secret != "" {
-		tlsConfig := &tls.Config{}
-		env.configureTruststore(tlsConfig)
-		env.configureSSLClientCert(tlsConfig)
-		tlsConfig.BuildNameToCertificate()
-		transport := &http.Transport{TLSClientConfig: tlsConfig}
-		client.Transport = transport
-		log.Info("Configured SSL from secret", "secret", env.Secret)
-	}
-
-	if env.Insecure {
-		if tr, ok := client.Transport.(*http.Transport); ok {
-			tr.TLSClientConfig.InsecureSkipVerify = true
-		} else {
-			tlsConfig := &tls.Config{InsecureSkipVerify: true}
-			client.Transport = &http.Transport{TLSClientConfig: tlsConfig}
-		}
-		log.Info("Skipping SSL verification!!!")
-	}
-	log.Info("Configured environment", "name", env.Name, "key", env.Key, "namespace", env.Namespace)
-}
-
-func (env Environment) configureSSLClientCert(tlsConfig *tls.Config) {
-	certFile := env.getSecretPath() + "cert.pem"
-	keyFile := env.getSecretPath() + "key.pem"
-
-	if !pathExists(certFile) && !pathExists(keyFile) {
-		return
-	}
-
-	// Load client cert
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		panic("Could not load client certificcate: " + err.Error())
-	}
-	// Add the client certificate
-	tlsConfig.Certificates = []tls.Certificate{cert}
-	// TODO log the name of the client as seen in the cert
-	log.Info("Using SSL Client cerfificate from cert.pem and key.pem secrets")
-}
-
-func (env Environment) configureTruststore(tlsConfig *tls.Config) {
-	caFile := env.getSecretPath() + "ca.pem"
-	if !pathExists(caFile) {
-		return
-	}
-	caCert, err := ioutil.ReadFile(caFile)
-	if err != nil {
-		panic("Could not load CA file: " + err.Error())
-	}
-
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-	tlsConfig.RootCAs = caCertPool
-
-	log.Info("Using CA from ca.pem secret")
-}
-
 func (env Environment) reconcile() {
-	// FIXME make sure that the check works for the DefaultClient
-	if &env.httpClient == http.DefaultClient {
-		err := errors.New("environment not initialized, call Init() before first use")
-		panic(err)
-	}
 	env.ensureNamespace()
 
 	// get the apps and order alphabetically to maintain consistency when applying the k8Config
@@ -382,7 +309,7 @@ func (env Environment) execute(method string, url string) []byte {
 
 	env.configureAuth(request)
 	// execute the request
-	resp, err := env.httpClient.Do(request)
+	resp, err := httpClient.Do(request)
 	if err != nil {
 		if _, ok := err.(*net.DNSError); ok {
 			// Using a string indicates that we consider the error handled

@@ -44,18 +44,6 @@ spec:
       name: Production
       profile: [ vsg, prd ]
 ```
-### CloudConfigServer
-The CloudConfigServer CRD is used to manage a Spring Cloud Config Server Kubernetes service.
-
-CloudConfigServer CRD example:
-```yaml
-apiVersion: k8.jabberwocky.se/v1alpha1
-kind: CloudConfigServer
-metadata:
-  name: cloud-config-server   # name of this config server
-spec:
-  # TODO provide sample configuration of a Spring Cloud Server
-```
 ## Project Setup
 The following instructions assume Mac OS X with [Home Brew](https://brew.sh/) and a local [Minikube](https://github.com/kubernetes/minikube) as the development Kubernetes cluster:
 
@@ -74,7 +62,6 @@ __To setup the Operator SDK please follow the [Quick Start instsructions on GitH
 Planned release versions:
 
 - [ ] v0.1 `CloudConfig` CRD for managing Spring Cloud Config apps
-- [ ] v0.2 `CloudConfigServer` CRD for managing a Spring Cloud Config server
 - [ ] v1.0 The first stable version of `cloud-config-operator` resource API
 
 ## References

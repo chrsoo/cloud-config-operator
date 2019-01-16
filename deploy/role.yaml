@@ -42,6 +42,5 @@ rules:
   - k8.jabberwocky.se
   resources:
   - '*'
-  - cloudconfigservers
   verbs:
   - '*'

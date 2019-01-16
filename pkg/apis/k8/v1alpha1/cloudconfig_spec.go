@@ -2,6 +2,11 @@ package v1alpha1
 
 // Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 import (
+	"time"
+	"crypto/x509"
+	"io/ioutil"
+	"crypto/tls"
+	"net/http"
 	"errors"
 	"fmt"
 	"sync"
@@ -23,10 +28,66 @@ type CloudConfigSpec struct {
 
 // Init intializes the configuration for fist use
 func (spec CloudConfigSpec) Init() {
-	for key := range spec.Environments {
-		env := spec.GetEnvironment(key)
-		env.Configure()
+	// TODO make HTTP Timeout configuratble
+	client := &http.Client{Timeout: time.Duration(10 * time.Second)}
+
+	// TODO add proxy support and proxy authentication
+	if spec.Secret != "" {
+		tlsConfig := &tls.Config{}
+		spec.configureTruststore(tlsConfig)
+		spec.configureSSLClientCert(tlsConfig)
+		tlsConfig.BuildNameToCertificate()
+		transport := &http.Transport{TLSClientConfig: tlsConfig}
+		client.Transport = transport
+		log.Info("Configured SSL from secret", "secret", spec.Secret)
 	}
+
+	if spec.Insecure {
+		if tr, ok := client.Transport.(*http.Transport); ok {
+			tr.TLSClientConfig.InsecureSkipVerify = true
+		} else {
+			tlsConfig := &tls.Config{InsecureSkipVerify: true}
+			client.Transport = &http.Transport{TLSClientConfig: tlsConfig}
+		}
+		log.Info("Skipping SSL verification!!!")
+	}
+	log.Info("Configured Cloud Config", "name", spec.Name)
+}
+
+func (spec CloudConfigSpec) configureSSLClientCert(tlsConfig *tls.Config) {
+	certFile := spec.getSecretPath() + "cert.pem"
+	keyFile := spec.getSecretPath() + "key.pem"
+
+	if !pathExists(certFile) && !pathExists(keyFile) {
+		return
+	}
+
+	// Load client cert
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		panic("Could not load client certificcate: " + err.Error())
+	}
+	// Add the client certificate
+	tlsConfig.Certificates = []tls.Certificate{cert}
+	// TODO log the name of the client as seen in the cert
+	log.Info("Using SSL Client cerfificate from cert.pem and key.pem secrets")
+}
+
+func (spec CloudConfigSpec) configureTruststore(tlsConfig *tls.Config) {
+	caFile := spec.getSecretPath() + "ca.pem"
+	if !pathExists(caFile) {
+		return
+	}
+	caCert, err := ioutil.ReadFile(caFile)
+	if err != nil {
+		panic("Could not load CA file: " + err.Error())
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	tlsConfig.RootCAs = caCertPool
+
+	log.Info("Using CA from ca.pem secret")
 }
 
 // GetEnvironment returns an environment from the spec falling back to default values for unspecified fields
