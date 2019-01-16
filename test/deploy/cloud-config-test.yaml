@@ -1,0 +1,19 @@
+apiVersion: k8.jabberwocky.se/v1alpha1
+kind: CloudConfig
+metadata:
+  name: test
+spec:
+  server: cloud-config-server:8888  # Cloud Config Server name or URL
+  credentials: cloud-config         # Cloud Config Server secret
+  label: master                     # label used for all apps, defaults to 'master'
+  specFile: deployment.yaml         # app spec file, defaults to 'deployment.yaml'
+  appName: cluster                  # application name, defaults to the CloudConfig name
+  appList: services                 # application list property of AppName app
+  insecure: true                    # do not require or verify SSL server certificates
+
+  environments:                     # Environments where apps are managed, global values can be overridden
+    dev:                            # environment key
+      name: Development             # environment name, defaults to the key value
+      profile: [ dev ]              # cloud config profiles for the env
+    prd:
+      profile: [ prd ]

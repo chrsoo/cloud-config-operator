@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${app}
+  labels:
+    app: ${app}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${app}
+  template:
+    metadata:
+      labels:
+        app: ${app}
+    spec:
+      containers:
+      - name: ${app}-container
+        image: ${container.image}
+        args:
+        - sh
+        - -c
+        - while :; do echo 'All work and no play makes Jack a dull boy.'; sleep 1; done
