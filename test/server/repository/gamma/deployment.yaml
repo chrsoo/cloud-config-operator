@@ -20,4 +20,4 @@ spec:
         args:
         - sh
         - -c
-        - "while :; do echo $(date): All work and no play makes Jack a dull boy.; sleep 1; done"
+        - "while :; do echo $(date): All play and no work makes Jack a mere toy.; sleep 1; done"

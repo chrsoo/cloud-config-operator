@@ -7,4 +7,4 @@ spring:
     config:
       server:
         native:
-          searchLocations: file:/config/repository
+          searchLocations: file:/config/repository, file:/config/repository/{application}
