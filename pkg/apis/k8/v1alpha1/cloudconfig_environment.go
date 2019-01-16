@@ -20,7 +20,7 @@ import (
 
 const (
 	// SecretPathPrefix is the directory where secretes are mounted
-	SecretPathPrefix = "/var/secret/config/"
+	SecretPathPrefix = "/var/run/secret/cloud-config/"
 )
 
 // Environment defines a CloudConfig environment configuration
@@ -140,21 +140,31 @@ func (env Environment) reconcile() {
 	sort.Strings(apps)
 
 	// concatenate all app files into one configuration for the namespace
-	config := make([]byte, 0, 1024)
+	spec := make([]byte, 0, 1024)
 	for _, app := range apps {
 		file := env.getAppConfigFile(app, env.SpecFile)
-		config = appendYAMLDoc(config, file)
+		// TODO ensure that the file is valid YAML before appending it to the spec
+		spec = env.appendYAMLDoc(app, spec, file)
 	}
-	env.apply(config)
+
+	if len(spec) == 0 {
+		log.Info(fmt.Sprintf("No specification to apply for namespace %s", env.Namespace),
+			"namespace", env.Namespace)
+	} else {
+		env.apply(&spec)
+	}
 }
 
 // appendYAMLDoc appends a doc to an existing YAML configuration that is assumed to be valid YAML
-func appendYAMLDoc(config, doc []byte) []byte {
+func (env Environment) appendYAMLDoc(app string, config, doc []byte) []byte {
 	delim := []byte("---\n")
 	doc = bytes.Trim(doc, "\n\r\t ")
 
 	// don't append empty documents
-	if len(doc) == 0 || bytes.HasSuffix(doc, []byte("---")) {
+	if len(doc) == 0 || bytes.Equal(doc, []byte("---")) {
+		log.Info(fmt.Sprintf("Could not find deployment spec for '%s'", app),
+			"namespace", env.Namespace,
+			"app", app)
 		return config
 	}
 
@@ -207,27 +217,35 @@ func (env Environment) ensureNamespace() {
 	}
 }
 
-func (env Environment) apply(config []byte) {
+func (env Environment) apply(config *[]byte) {
 	cmd := execCommand(
 		"kubectl",
 		"--namespace="+env.Namespace,
 		"apply",
 		"--prune",
-		"--all=true",
+		"--all",
 		"-f",
 		"-")
-	cmd.Stdin = bytes.NewReader(config)
+	cmd.Stdin = bytes.NewReader(*config)
+	cmdString := strings.Join(cmd.Args, " ")
 
-	log.Info("Applying config for namespace",
+	log.Info(fmt.Sprintf("Reconciling environment '%s'", env.Namespace),
 		"namespace", env.Namespace,
-		"command", strings.Join(cmd.Args, " "))
+		"command", cmdString)
 
+	var out []byte
 	if out, err := cmd.CombinedOutput(); err != nil {
-		log.Error(err, "Could not apply config in namespace",
+		log.Error(err, fmt.Sprintf("Could not reconcile environment '%s'", env.Namespace),
 			"namespace", env.Namespace,
+			"command", cmdString,
 			"output", string(out))
 		panic(err)
 	}
+
+	log.Info(fmt.Sprintf("Reconciled environment '%s'", env.Namespace),
+		"namespace", env.Namespace,
+		"command", cmdString,
+		"output", string(out))
 }
 
 func (env Environment) getApps() []string {

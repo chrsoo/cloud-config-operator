@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"bytes"
 	"encoding/base64"
 	"io/ioutil"
 	"net/http"
@@ -22,26 +23,28 @@ func TestReconcile(t *testing.T) {
 	env := getTestEnv(t)
 	assert.Equal(t, []string{"article", "authz"}, env.getApps())
 
-	go env.reconcile()
+	env.reconcile()
+
 }
 
 func TestAppendYAMLDoc(t *testing.T) {
-	config := appendYAMLDoc([]byte(""), []byte("Some fake YAML\n"))
+	env := Environment{}
+	config := env.appendYAMLDoc("app", []byte(""), []byte("Some fake YAML\n"))
 	assert.Equal(t, "---\nSome fake YAML\n", string(config))
 
-	config = appendYAMLDoc(config, []byte("More fake YAML"))
+	config = env.appendYAMLDoc("app", config, []byte("More fake YAML"))
 	assert.Equal(t, "---\nSome fake YAML\n---\nMore fake YAML\n", string(config))
 
-	config = appendYAMLDoc(config, []byte("---\nLeading doc separator"))
+	config = env.appendYAMLDoc("app", config, []byte("---\nLeading doc separator"))
 	assert.Equal(t, "---\nSome fake YAML\n---\nMore fake YAML\n---\nLeading doc separator\n", string(config))
 
-	config = appendYAMLDoc([]byte(""), []byte("\n---\nLeading newline with doc separator\n"))
+	config = env.appendYAMLDoc("app", []byte(""), []byte("\n---\nLeading newline with doc separator\n"))
 	assert.Equal(t, "---\nLeading newline with doc separator\n", string(config))
 
-	config = appendYAMLDoc([]byte("---\nSome fake YAML\n"), []byte(""))
+	config = env.appendYAMLDoc("app", []byte("---\nSome fake YAML\n"), []byte(""))
 	assert.Equal(t, "---\nSome fake YAML\n", string(config), "Empty document appended")
 
-	config = appendYAMLDoc([]byte("---\nSome fake YAML\n"), []byte("---\n"))
+	config = env.appendYAMLDoc("app", []byte("---\nSome fake YAML\n"), []byte("---\n"))
 	assert.Equal(t, "---\nSome fake YAML\n", string(config), "Empty document with separator appended")
 }
 
@@ -60,10 +63,20 @@ func TestHelperProcess(t *testing.T) {
 		return
 	}
 	// TODO capture input from stdin
+	// FIXME broken mock logic for command line testing
 	if os.Args[4] == "get" {
 		os.Exit(1)
 	}
 	os.Exit(0)
+}
+
+func TestExecWithStdin(t *testing.T) {
+	cmd := execCommand("cat")
+	cmd.Stdin = bytes.NewReader([]byte("Hello World!"))
+	out, err := cmd.CombinedOutput()
+	assert.NoError(t, err, "Command should execute without error")
+	assert.NotNil(t, out, "Expected some output")
+	assert.Equal(t, "Hello World!", string(out), "Expected output to equal input on stdin")
 }
 
 // TODO test error codes, in particualar 401, 403 and 404
