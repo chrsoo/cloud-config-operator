@@ -78,3 +78,7 @@ tags
 
 # IntelliJ IDEA
 *.iml
+
+# Mac OS
+.DS_Store
+
