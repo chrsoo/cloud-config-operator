@@ -8,15 +8,15 @@ import (
 
 var log = logf.Log.WithName("cloudconfig")
 
-func testPath(path string) (bool, error) {
+func pathExists(path string) bool {
 	_, err := os.Stat(path)
 	if err == nil {
-		return true, nil
+		return true
 	}
 	if os.IsNotExist(err) {
-		return false, nil
+		return false
 	}
-	return true, err
+	panic(err)
 }
 
 func readFile(path string) string {

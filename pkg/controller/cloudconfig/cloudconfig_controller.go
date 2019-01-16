@@ -3,15 +3,22 @@ package cloudconfig
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/chrsoo/cloud-config-operator/version"
 
 	k8v1alpha1 "github.com/chrsoo/cloud-config-operator/pkg/apis/k8/v1alpha1"
 	jobv1 "k8s.io/api/batch/v1"
 	cronv1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -25,6 +32,10 @@ import (
 const (
 	// DefaultSchedule is the default cron job reconciliation schedule
 	DefaultSchedule = "*/1 * * * *"
+	// DefaultCronJobImage is the default Docker image used for the reconcilaition CronJob
+	DefaultCronJobImage = "chrsoo/cloud-config-operator:" + version.Version
+	// CronJobTimeout defines the timeout before the CronJob is automatically terminated, cf `activeDeadlineSeconds` of the K8 JobSpec
+	CronJobTimeout = 300
 )
 
 var log = logf.Log.WithName("controller_cloudconfig")
@@ -90,7 +101,7 @@ func (r *ReconcileCloudConfig) Reconcile(request reconcile.Request) (reconcile.R
 	instance := &k8v1alpha1.CloudConfig{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
@@ -100,12 +111,27 @@ func (r *ReconcileCloudConfig) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
+	if err := validate(&instance.Spec); err != nil {
+		log.Error(err, "Validation failed")
+		// Return and don't requeue
+		return reconcile.Result{}, nil
+	}
+
+	// Secrets are configurable per environment but we only have one CronJob. Currently
+	// a globally defined secret is assumed and is associated with the one CronJob managing
+	// all environments.
+	// Using multiple CronJobs per environment can also be motivated by additional control and improved
+	// isolation.
+	// TODO create one CronJob per environment to improve isolation and enable different secrets per environment
+
 	// Define a new CronJob object
 	job, err := newCronJobForCR(instance)
 	if err != nil {
 		reqLogger.Error(err, "Could not marshal CloudConfig as JSON; returning request to queue")
 		return reconcile.Result{}, err
 	}
+
+	job = r.configureSecret(instance, job)
 
 	// Set CloudConfig instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, job, r.scheme); err != nil {
@@ -115,7 +141,7 @@ func (r *ReconcileCloudConfig) Reconcile(request reconcile.Request) (reconcile.R
 	// Check if this CronJob already exists
 	found := &cronv1.CronJob{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8errors.IsNotFound(err) {
 		reqLogger.Info("Creating a new CronJob", "CronJob.Namespace", job.Namespace, "CronJob.Name", job.Name)
 		err = r.client.Create(context.TODO(), job)
 		if err != nil {
@@ -150,7 +176,6 @@ func fallBackIfEmpty(field *string, defaultValue string) {
 
 // newCronJobForCR returns a CronJob pod with the same name/namespace as the cr
 func newCronJobForCR(cr *k8v1alpha1.CloudConfig) (*cronv1.CronJob, error) {
-
 	setFallbackValues(cr)
 	spec, err := json.Marshal(cr.Spec)
 	if err != nil {
@@ -186,10 +211,12 @@ func newCronJobForCR(cr *k8v1alpha1.CloudConfig) (*cronv1.CronJob, error) {
 						},
 						Spec: corev1.PodSpec{
 							ServiceAccountName: "cloud-config-operator",
+							// TODO make the ActiveDeadlineSeconds configurable
+							ActiveDeadlineSeconds: timeout(),
 							Containers: []corev1.Container{
 								{
 									Name:    "cloud-config-operator",
-									Image:   "cloud-config-operator:develop",
+									Image:   DefaultCronJobImage,
 									Command: []string{"cloud-config-operator", "--reconcile", config},
 									// FIXME change back to ImagePullPolicy: Always
 									ImagePullPolicy: "Never",
@@ -202,28 +229,89 @@ func newCronJobForCR(cr *k8v1alpha1.CloudConfig) (*cronv1.CronJob, error) {
 			},
 		},
 	}
+	return job, nil
+}
 
-	// TODO rename 'Crecdentials' to 'Secret'
-	// TODO if a secret is defined verify that it exists and panic if not, retry after one minute, five?
-	if cr.Spec.Secret != "" {
-		job.Spec.JobTemplate.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
-			{
-				Name:      "cloud-config-secret",
-				MountPath: k8v1alpha1.SecretPath,
-				ReadOnly:  true,
-			},
-		}
-		job.Spec.JobTemplate.Spec.Template.Spec.Volumes = []corev1.Volume{
-			{
-				Name: "cloud-config-secret",
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: cr.Spec.Secret,
-					},
-				},
-			},
-		}
+func (r *ReconcileCloudConfig) configureSecret(cr *k8v1alpha1.CloudConfig, job *cronv1.CronJob) *cronv1.CronJob {
+	s := cr.Spec.Secret
+	if s == "" {
+		return job
 	}
 
-	return job, nil
+	var secretPath string
+	if strings.Contains(s, "/") {
+		secretPath = s
+	} else {
+		if !r.isSecret(job.Namespace, s) {
+			panic("Could not configure secret '" + s + "' for CloudConfig '" + cr.Name + "'")
+		}
+		secretPath = k8v1alpha1.SecretPathPrefix + s
+	}
+
+	job.Spec.JobTemplate.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+		{
+			Name:      "cloud-config-secret",
+			MountPath: secretPath,
+			ReadOnly:  true,
+		},
+	}
+	job.Spec.JobTemplate.Spec.Template.Spec.Volumes = []corev1.Volume{
+		{
+			Name: "cloud-config-secret",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: cr.Spec.Secret,
+				},
+			},
+		},
+	}
+	return job
+}
+
+func (r *ReconcileCloudConfig) isSecret(namespace, name string) bool {
+	var secret corev1.Secret
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, &secret); err != nil {
+		log.Error(err, "Could not get the secret '"+namespace+"."+name+"'")
+		if k8errors.IsNotFound(err) {
+			return false
+		}
+		// panic if the error is anything but not found!
+		panic(err)
+	}
+	// we found the secret
+	return true
+}
+
+func timeout() *int64 {
+	t := int64(CronJobTimeout)
+	return &t
+}
+
+func validate(spec *k8v1alpha1.CloudConfigSpec) error {
+	validationErrors := field.ErrorList{}
+	if spec.Server == "" {
+		path := field.NewPath("server")
+		fieldErr := field.Required(path, "A Config Server URL must be provided")
+		validationErrors = append(validationErrors, fieldErr)
+	}
+
+	// Allow plain http only if insecure is true, if no protocol scheme
+	// is specified we automatically use https in Environment!
+	url := strings.ToLower(spec.Server)
+	if !spec.Insecure && strings.HasPrefix(url, "http:") {
+		path := field.NewPath("server")
+		fieldErr := field.Invalid(path, spec.Server, "URL must use the `https` scheme")
+		validationErrors = append(validationErrors, fieldErr)
+	}
+
+	if len(validationErrors) > 0 {
+		// TODO add CloudConfigSpec's group and kind to groupKind instance
+		groupKind := schema.GroupKind{}
+		err := k8errors.NewInvalid(groupKind, "CloudCongigSpec", validationErrors)
+		// TODO return error instance wrapping err
+		return errors.New(err.Error())
+		// return errors.New("Validation failed")
+	}
+
+	return nil
 }
