@@ -1,0 +1,10 @@
+spring:
+  application:
+    name:  cloud-config-server
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          searchLocations: file:/config/repository

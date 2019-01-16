@@ -1,0 +1,41 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: cloud-config-server
+spec:
+  selector:
+    app: cloud-config-server
+  ports:
+  - protocol: TCP
+    port: 8888
+    targetPort: 8888
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-config-server
+  labels:
+    app: cloud-config-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-config-server
+  template:
+    metadata:
+      labels:
+        app: cloud-config-server
+    spec:
+      containers:
+      - name: cloud-config-server
+        image: hyness/spring-cloud-config-server
+        ports:
+        - containerPort: 8888
+        volumeMounts:
+        - mountPath: /config
+          name: config-volume
+      volumes:
+      - name: config-volume
+        hostPath:
+          path: /Users/christoffer.soop/go/src/github.com/chrsoo/cloud-config-operator/test/server
+          type: Directory
