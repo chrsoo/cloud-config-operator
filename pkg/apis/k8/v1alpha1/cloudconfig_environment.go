@@ -19,18 +19,17 @@ const (
 	SecretPathPrefix = "/var/run/secret/cloud-config/"
 )
 
-var httpClient http.Client
-
 // Environment defines a CloudConfig environment configuration
 type Environment struct {
 	// If Insecure is 'true' certificates are not required for
 	// servers outside the cluster and SSL errors are ignored.
 	Insecure bool `json:"insecure,omitempty"`
 
-	// Key for the environment
-	Key string `json:"key,omitempty"`
+	// Cloud Config Server secret containing username and password
+	// FIXME use a path, file or whatever
+	Secret string `json:"secret,omitempty"`
 
-	// Name of the environment
+	// Name of the environment, this managed automatically from the CloudConfig spec
 	Name string `json:"name,omitempty"`
 
 	// Namespace for all apps in this environment
@@ -48,10 +47,6 @@ type Environment struct {
 	// Cloud Config Server name or URL
 	Server string `json:"server,omitempty"`
 
-	// Cloud Config Server secret containing username and password
-	// FIXME use a path, file or whatever
-	Secret string `json:"secret,omitempty"`
-
 	// app spec file name, defaults to 'deployment.yaml'
 	SpecFile string `json:"specFile,omitempty"`
 
@@ -66,6 +61,7 @@ func (env Environment) reconcile() {
 	apps := env.getApps()
 	sort.Strings(apps)
 
+	// TODO support a single App without an AppList property
 	// concatenate all app files into one configuration for the namespace
 	spec := make([]byte, 0, 1024)
 	for _, app := range apps {
@@ -174,7 +170,7 @@ func (env Environment) getApps() []string {
 
 	body := env.getAppConfig(env.AppName)
 	if len(body) == 0 {
-		err := fmt.Errorf("App configuration for '%s' not found for %s", env.AppName, env.Key)
+		err := fmt.Errorf("App configuration for '%s' not found for %s", env.AppName, env.Name)
 		log.Error(err, "Could not get the list of applications", "namespace", env.Namespace)
 		return []string{}
 	}
