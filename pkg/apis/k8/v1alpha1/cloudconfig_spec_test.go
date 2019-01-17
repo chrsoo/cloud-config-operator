@@ -19,7 +19,7 @@ func TestCloudConfigSpec(t *testing.T) {
 
 	dev := actual.GetEnvironment("dev")
 	assert.Equal(t, "cluster", dev.AppName, "Unspecified value for AppName should fall back to global default")
-	assert.Equal(t, "Development", dev.Name, "Name value should not be overwritten")
+	assert.Equal(t, "dev", dev.Name, "Name value should same as the environments key")
 	assert.Equal(t, "develop", dev.Label, "Label value should not be overwritten")
 
 	qua := actual.GetEnvironment("qua")

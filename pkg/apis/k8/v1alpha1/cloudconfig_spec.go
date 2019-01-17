@@ -26,10 +26,12 @@ type CloudConfigSpec struct {
 	Environments map[string]Environment `json:"environments,omitempty"`
 }
 
+var httpClient http.Client
+
 // Init intializes the configuration for fist use
 func (spec CloudConfigSpec) Init() {
 	// TODO make HTTP Timeout configuratble
-	client := &http.Client{Timeout: time.Duration(10 * time.Second)}
+	httpClient = http.Client{Timeout: time.Duration(10 * time.Second)}
 
 	// TODO add proxy support and proxy authentication
 	if spec.Secret != "" {
@@ -37,17 +39,16 @@ func (spec CloudConfigSpec) Init() {
 		spec.configureTruststore(tlsConfig)
 		spec.configureSSLClientCert(tlsConfig)
 		tlsConfig.BuildNameToCertificate()
-		transport := &http.Transport{TLSClientConfig: tlsConfig}
-		client.Transport = transport
+		httpClient.Transport = &http.Transport{TLSClientConfig: tlsConfig}
 		log.Info("Configured SSL from secret", "secret", spec.Secret)
 	}
 
 	if spec.Insecure {
-		if tr, ok := client.Transport.(*http.Transport); ok {
+		if tr, ok := httpClient.Transport.(*http.Transport); ok {
 			tr.TLSClientConfig.InsecureSkipVerify = true
 		} else {
 			tlsConfig := &tls.Config{InsecureSkipVerify: true}
-			client.Transport = &http.Transport{TLSClientConfig: tlsConfig}
+			httpClient.Transport = &http.Transport{TLSClientConfig: tlsConfig}
 		}
 		log.Info("Skipping SSL verification!!!")
 	}
@@ -93,14 +94,9 @@ func (spec CloudConfigSpec) configureTruststore(tlsConfig *tls.Config) {
 // GetEnvironment returns an environment from the spec falling back to default values for unspecified fields
 func (spec CloudConfigSpec) GetEnvironment(key string) *Environment {
 	e := spec.Environments[key]
-	env := e.DeepCopy()
-	env.Key = key
-	env.Namespace = spec.Key + "-" + key
-	// default environment name to the key name
-	if env.Name == "" {
-		env.Name = env.Key
-	}
-
+	env := e.DeepCopy() // use a copy as to no corrupt the values supplied by the user
+	env.Name = key
+	env.Namespace = spec.Name + "-" + key
 	// env values that are already defined are retained
 	mergo.Merge(env, spec.Environment)
 

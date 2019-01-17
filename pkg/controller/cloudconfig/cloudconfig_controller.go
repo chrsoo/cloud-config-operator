@@ -161,10 +161,9 @@ func (r *ReconcileCloudConfig) Reconcile(request reconcile.Request) (reconcile.R
 	return reconcile.Result{}, nil
 }
 
-func setFallbackValues(cr *k8v1alpha1.CloudConfig) {
-	fallBackIfEmpty(&cr.Spec.Environment.Name, cr.ObjectMeta.GetName())
+func setDefaults(cr *k8v1alpha1.CloudConfig) {
+	cr.Spec.Environment.Name = cr.ObjectMeta.Name
 	fallBackIfEmpty(&cr.Spec.Environment.AppName, cr.Spec.Environment.Name)
-	fallBackIfEmpty(&cr.Spec.Environment.Key, cr.Spec.Environment.Name)
 	fallBackIfEmpty(&cr.Spec.Schedule, DefaultSchedule)
 }
 
@@ -176,7 +175,7 @@ func fallBackIfEmpty(field *string, defaultValue string) {
 
 // newCronJobForCR returns a CronJob pod with the same name/namespace as the cr
 func newCronJobForCR(cr *k8v1alpha1.CloudConfig) (*cronv1.CronJob, error) {
-	setFallbackValues(cr)
+	setDefaults(cr)
 	spec, err := json.Marshal(cr.Spec)
 	if err != nil {
 		return nil, err
