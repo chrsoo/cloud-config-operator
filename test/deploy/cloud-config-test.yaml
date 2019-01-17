@@ -4,7 +4,7 @@ metadata:
   name: test
 spec:
   server: cloud-config-server:8888  # Cloud Config Server name or URL
-  credentials: cloud-config         # Cloud Config Server secret
+  secert: cloud-config              # Cloud Config Server secret
   label: master                     # label used for all apps, defaults to 'master'
   specFile: deployment.yaml         # app spec file, defaults to 'deployment.yaml'
   appName: cluster                  # application name, defaults to the CloudConfig name
