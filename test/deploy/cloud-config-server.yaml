@@ -37,5 +37,5 @@ spec:
       volumes:
       - name: config-volume
         hostPath:
-          path: /Users/christoffer.soop/go/src/github.com/chrsoo/cloud-config-operator/test/server
+          path: REPLACE_ME_WITH_HOME_DIR!!!/go/src/github.com/chrsoo/cloud-config-operator/test/server
           type: Directory

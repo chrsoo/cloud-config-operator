@@ -1,18 +1,9 @@
 # Cloud Config Operator
-Provision Kubernetes applications using Spring Cloud Config Server
-with a GitOps approach.
+Provision Kubernetes applications using Spring Cloud Config Server with a GitOps approach.
 
-## Custom Resource Definitions
-### CloudConfig
-The CloudConfig CRD defines a Cloud Config Server configuration that Spring Cloud
-Operator will monitor and synchronize with the cluster state. A CloudConfig
-specifies a number of `environments`. Each environment is in turn defined by a
-list of `profiles` and a `label`.
-
-For each environment in `environments`, Spring Cloud Operator will
-
-* Retrieve the `appList` list of applications for the `appName` application; and
-* Apply the `specFile` Kubernetes specification for each app on the list
+## Custom Resource Definition
+The `CloudConfig` CRD defines one or more Spring Cloud Config Apps that that
+Cloud Config Operator will monitor and synchronize with the cluster state.
 
 CloudConfig CRD example:
 
@@ -20,30 +11,51 @@ CloudConfig CRD example:
 apiVersion: k8.jabberwocky.se/v1alpha1
 kind: CloudConfig
 metadata:
-  name: dms                     # System or Application name
+  name: test
 spec:
-  server: cloud-config-server   # Cloud Config Server name or URL
-  secret: cloud-config          # Cloud Config Server secret
-  label: master                 # label used for all apps, defaults to 'master'
-  specFile: deployment.yaml     # app spec file, defaults to 'deployment.yaml'
-  appName: dms-cluster          # main app name, defaults to the CloudConfig name
-  appList: services             # app list property
-  schedule: "*/1 * * * *"       # cron job schedule
-  environments:                 # app environments, global values can be overridden
-    dev:                        # environment key
-      name: Development         # environment name, defaults to the key value
-      profile: [ vsg, dev ]     # cloud config profiles for the env
-      label: develop            # optionally override the global label
-    qua:
-      name: Quality
-      profile: [ vsg, qua ]
-    val:
-      name: Validation
-      profile: [ vsg, val ]
+  server: cloud-config-server:8888  # Cloud Config Server name or URL
+  secert: cloud-config              # Cloud Config Server secret
+  label: master                     # label used for all apps, defaults to 'master'
+  specFile: deployment.yaml         # app spec file, defaults to 'deployment.yaml'
+  appName: cluster                  # application name, defaults to the CloudConfig name
+  appList: services                 # application list property of AppName app
+  insecure: true                    # do not require or verify SSL server certificates
+
+  environments:                     # Environments where apps are managed, global values can be overridden
+    dev:                            # Map key is used as the environment's name
+      profile: [ dev ]              # cloud config profiles for the env
     prd:
-      name: Production
-      profile: [ vsg, prd ]
+      profile: [ prd ]
 ```
+## Usage
+
+Cloud Config Apps exist in a number of `environments`. Each environment is
+defined by a list of `profiles` and a `label`.
+
+For each environment in `environments`, Spring Cloud Operator will
+
+* Retrieve the app's `specFile` from the Spring Cloud Config Server
+* Apply the `specFile` to the Kubernetes cluster
+
+### App or List of Apps
+
+A CloudConfig can either define a single App or a list of Apps.
+
+In the first case the `appName` is the name of the Spring Cloud Config application
+
+In the second case the `appName` defines the application that contains a single
+configuration property `appList` that lists the Apps to manage. This property
+can have different values in different environments.
+
+### Environments and namespaces
+TODO
+
+### Versioning per environment
+TODO
+
+### Different spec files per environment
+TODO
+
 ## Project Setup
 The following instructions assume Mac OS X with [Home Brew](https://brew.sh/) and a local [Minikube](https://github.com/kubernetes/minikube) as the development Kubernetes cluster:
 
