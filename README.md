@@ -71,7 +71,6 @@ Once you have a working Go environment you can get the project using
 __To setup the Operator SDK please follow the [Quick Start instsructions on GitHub](https://github.com/operator-framework/operator-sdk#quick-start)!__
 
 ## Roadmap
-Planned release versions:
 
 - [X] v0.1 `CloudConfig` CRD for managing Spring Cloud Config apps. Experimental version based on CronJob and Kubectl to get things going.
 - [ ] v0.2 `CloudConfigEnv` CRD replaces CronJob.
