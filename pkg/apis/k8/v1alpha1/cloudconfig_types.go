@@ -65,7 +65,7 @@ func (config *CloudConfig) GetEnvironment(key string) *CloudConfigEnv {
 	mergo.Merge(env, config.Spec.CloudConfigEnvSpec)
 
 	// apply default credential values
-	mergo.Merge(env, DefaultCloudConfigEnvSpec(config.Spec.AppName, config.Name, key))
+	mergo.Merge(env, NewCloudConfigEnvSpec(config.Spec.AppName, config.Name, key))
 
 	// special rule for `Period` as ints are not merged
 	if env.Period == 0 {
@@ -112,20 +112,20 @@ func fallBackIfEmpty(field *string, defaultValue string) {
 	}
 }
 
-// DefaultCloudConfigEnvSpec returns the default spec for CloudConfigEnv
-func DefaultCloudConfigEnvSpec(app, sys, env string) *CloudConfigEnvSpec {
+// NewCloudConfigEnvSpec returns the default spec for CloudConfigEnv
+func NewCloudConfigEnvSpec(app, sys, env string) *CloudConfigEnvSpec {
 	return &CloudConfigEnvSpec{
 		AppName:     app,
 		Sys:         sys,
 		Env:         env,
 		Label:       "master",
 		Server:      "cloud-config-server:8888",
-		Credentials: *DefaultCloudConfigCredentials(),
+		Credentials: *NewCloudConfigCredentials(),
 	}
 }
 
-// DefaultCloudConfigCredentials returns the default credentials
-func DefaultCloudConfigCredentials() *CloudConfigCredentials {
+// NewCloudConfigCredentials returns the default credentials
+func NewCloudConfigCredentials() *CloudConfigCredentials {
 	return &CloudConfigCredentials{
 		Username: "username",
 		Password: "password",
