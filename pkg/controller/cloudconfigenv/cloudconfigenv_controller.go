@@ -3,7 +3,6 @@ package cloudconfigenv
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os/exec"
 	"sort"
@@ -237,23 +236,7 @@ func (r *ReconcileCloudConfigEnv) configureTrustStore(
 		return nil, err
 	}
 
-	return appendTrustStoreOption(opts, secret.Data)
-}
-
-func appendTrustStoreOption(
-	opts []func(*CloudConfigClient),
-	certs map[string][]byte) ([]func(*CloudConfigClient), error) {
-
-	var err error
-	convertedCerts := map[string][]byte{}
-	for key, cert := range certs {
-		convertedCerts[key], err = base64.StdEncoding.DecodeString(string(cert))
-		if err != nil {
-			return nil, err
-		}
-
-	}
-	return append(opts, TrustStore(certs)), nil
+	return append(opts, TrustStore(secret.Data)), nil
 }
 
 func (r *ReconcileCloudConfigEnv) appendCredentialsOptions(
@@ -297,20 +280,10 @@ func appendClientCertOption(
 	cr *k8v1alpha1.CloudConfigCredentials,
 	secret *corev1.Secret) ([]func(*CloudConfigClient), error) {
 
-	rawCert, hasCert := secret.Data[cr.Cert]
-	rawKey, hasKey := secret.Data[cr.Key]
+	cert, hasCert := secret.Data[cr.Cert]
+	key, hasKey := secret.Data[cr.Key]
 
 	if hasCert && hasKey {
-		cert, err := base64.StdEncoding.DecodeString(string(rawCert))
-		if err != nil {
-			return nil, err
-		}
-
-		key, err := base64.StdEncoding.DecodeString(string(rawKey))
-		if err != nil {
-			return nil, err
-		}
-
 		tlsOpt := ClientCert(cert, key)
 		return append(opts, tlsOpt), nil
 	}
@@ -329,20 +302,10 @@ func appendBasicAuthOption(
 	cr *k8v1alpha1.CloudConfigCredentials,
 	secret *corev1.Secret) ([]func(*CloudConfigClient), error) {
 
-	rawUsername, hasUsername := secret.Data[cr.Username]
-	rawPassword, hasPassword := secret.Data[cr.Password]
+	username, hasUsername := secret.Data[cr.Username]
+	password, hasPassword := secret.Data[cr.Password]
 
 	if hasUsername && hasPassword {
-		username, err := base64.StdEncoding.DecodeString(string(rawUsername))
-		if err != nil {
-			return nil, err
-		}
-
-		password, err := base64.StdEncoding.DecodeString(string(rawPassword))
-		if err != nil {
-			return nil, err
-		}
-
 		basicAuthOpt := BasicAuth(string(username), string(password))
 		return append(opts, basicAuthOpt), nil
 	}
@@ -361,12 +324,8 @@ func appendBearerAuthOption(
 	cr *k8v1alpha1.CloudConfigCredentials,
 	secret *corev1.Secret) ([]func(*CloudConfigClient), error) {
 
-	if bytes, ok := secret.Data[cr.Token]; ok {
-		token, err := base64.StdEncoding.DecodeString(string(bytes))
-		if err != nil {
-			return nil, err
-		}
-		return append(opts, BearerAuth(token)), nil
+	if token, ok := secret.Data[cr.Token]; ok {
+		return append(opts, BearerAuth(string(token))), nil
 	}
 
 	return opts, nil

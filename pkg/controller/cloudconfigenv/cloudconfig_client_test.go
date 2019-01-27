@@ -75,7 +75,7 @@ func TestClientCertOption(t *testing.T) {
 }
 
 func TestBearerAuthOption(t *testing.T) {
-	token := []byte("TOKEN_VALUE")
+	token := "TOKEN_VALUE"
 	client, err := New(TestBaseURL, BearerAuth(token))
 	assert.NoError(t, err)
 	assert.Equal(t, "TOKEN_VALUE", string(client.token), "Token not configured")
