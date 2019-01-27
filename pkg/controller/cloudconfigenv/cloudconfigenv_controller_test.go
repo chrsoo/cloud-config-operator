@@ -48,7 +48,7 @@ func TestAppendBearerAuthOption(t *testing.T) {
 		Data: map[string][]byte{},
 	}
 	opts := make([]func(*CloudConfigClient), 0, 1)
-	cr := k8v1alpha1.DefaultCloudConfigCredentials()
+	cr := k8v1alpha1.NewCloudConfigCredentials()
 
 	opts, err = appendBearerAuthOption(opts, cr, secret)
 	assert.NoError(t, err)
@@ -66,7 +66,7 @@ func TestAppendBasicAuthOption(t *testing.T) {
 		Data: map[string][]byte{},
 	}
 	opts := make([]func(*CloudConfigClient), 0, 1)
-	cr := k8v1alpha1.DefaultCloudConfigCredentials()
+	cr := k8v1alpha1.NewCloudConfigCredentials()
 
 	opts, err = appendBasicAuthOption(opts, cr, secret)
 	assert.NoError(t, err)
@@ -95,7 +95,7 @@ func TestAppendBasicAuthOption(t *testing.T) {
 
 func TestAppendClientCertOption(t *testing.T) {
 	var err error
-	cr := k8v1alpha1.DefaultCloudConfigCredentials()
+	cr := k8v1alpha1.NewCloudConfigCredentials()
 	opts := make([]func(*CloudConfigClient), 0, 1)
 
 	secret := &corev1.Secret{

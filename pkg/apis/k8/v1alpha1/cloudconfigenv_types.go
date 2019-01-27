@@ -35,7 +35,7 @@ type CloudConfigEnvSpec struct {
 	AppList string `json:"appList,omitempty"`
 
 	// Period is the number of seconds between cloud config synchronizations,
-	// zero means the environment is updated only once after each CloudConfigEnv change
+	// a 0 value means that the environment is updated only once after each CloudConfigEnv change
 	Period int `json:"period,omitempty"`
 
 	// TrustStore optionally defines the name of a secret containing all trusted certificates
