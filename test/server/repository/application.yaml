@@ -1,6 +1,7 @@
 # App defaults - we use undefined for what has to be specified by individual apps
 app: UNDEFINED
 env: UNDEFINED
+sys: test
 version: UNDEFINED
 
 container:
@@ -9,6 +10,6 @@ container:
   - sh
   - -c
   - while :; do echo 'All work and no play makes Jack a dull boy.'; sleep 1; done
-  
+
 kubernetes:
   replicas: 1

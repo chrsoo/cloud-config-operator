@@ -1,54 +1,12 @@
 package cloudconfig
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	k8v1alpha1 "github.com/chrsoo/cloud-config-operator/pkg/apis/k8/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-func TestFallBackIfEmpty(t *testing.T) {
-	val := struct{ field string }{""}
-	fallBackIfEmpty(&val.field, "aValue")
-	assert.Equal(t, "aValue", val.field)
-}
-
-func TestSetDefaults(t *testing.T) {
-	config := k8v1alpha1.CloudConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "dms",
-		},
-	}
-	setDefaults(&config)
-	assert.Equal(t, config.ObjectMeta.Name, config.Spec.Name, "Spec name should always be the config's metadata name")
-	assert.Equal(t, "dms", config.Spec.AppName)
-	assert.Equal(t, DefaultSchedule, config.Spec.Schedule)
-
-	// test that explicitely set values are not overwritten
-	config.Spec.Environment.Name = "Microservices"
-	config.Spec.Environment.AppName = "DMS"
-	config.Spec.Schedule = "1 0 0 0 0"
-
-	setDefaults(&config)
-
-	assert.Equal(t, config.ObjectMeta.Name, config.Spec.Name, "Spec name should always be the config's metadata name")
-	assert.Equal(t, "DMS", config.Spec.AppName)
-	assert.Equal(t, "1 0 0 0 0", config.Spec.Schedule)
-
-}
-
-func TestNewCronJobForCR(t *testing.T) {
-	config := k8v1alpha1.CloudConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "dms",
-		},
-	}
-	job, err := newCronJobForCR(&config)
-	assert.Nil(t, err, "Err should be nil")
-	assert.NotNil(t, job, "Job should be an instance")
-	assert.Equal(t, config.Spec.Schedule, job.Spec.Schedule)
-}
 
 func TestValidation(t *testing.T) {
 	spec := k8v1alpha1.CloudConfigSpec{}

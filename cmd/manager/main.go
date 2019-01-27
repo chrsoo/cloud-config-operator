@@ -7,15 +7,12 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/chrsoo/cloud-config-operator/pkg/apis/k8/v1alpha1"
-
 	"github.com/chrsoo/cloud-config-operator/pkg/apis"
 	"github.com/chrsoo/cloud-config-operator/pkg/controller"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
-	"k8s.io/apimachinery/pkg/util/json"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -24,7 +21,6 @@ import (
 )
 
 var log = logf.Log.WithName("cmd")
-var reconcile = flag.String("reconcile", "", "Reconcile the CloudConfig given as an argument")
 
 func printVersion() {
 	log.Info(fmt.Sprintf("Go Version: %s", runtime.Version()))
@@ -41,24 +37,6 @@ func main() {
 	logf.SetLogger(logf.ZapLogger(false))
 
 	printVersion()
-
-	// -- CloudConfig reconciliation process
-
-	if *reconcile != "" {
-		// parse the value as a JSON CloudConfigSpec
-		var config v1alpha1.CloudConfigSpec
-		spec := []byte(*reconcile)
-		if err := json.Unmarshal(spec, &config); err != nil {
-			log.Error(err, "Could not unmarshal CloudConfigSpec config", "config", *reconcile)
-		}
-		// Confifure the HTTP Client
-		config.Init()
-		// reconcile the CloudConfigSpec
-		config.Reconcile()
-		// Exit cleanly even if there is an error as we will otherwise fail the cron job and
-		// thus potentially causing an immediate retry
-		os.Exit(0)
-	}
 
 	// -- Normal operator processing
 

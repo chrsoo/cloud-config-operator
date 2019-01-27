@@ -1,0 +1,15 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: cloudconfigenvs.k8.jabberwocky.se
+spec:
+  group: k8.jabberwocky.se
+  names:
+    kind: CloudConfigEnv
+    listKind: CloudConfigEnvList
+    plural: cloudconfigenvs
+    singular: cloudconfigenv
+  scope: Namespaced
+  version: v1alpha1
+  subresources:
+    status: {}
