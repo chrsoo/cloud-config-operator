@@ -5,19 +5,20 @@ metadata:
 spec:
   server:       cloud-config-server:8888  # Cloud Config Server name or URL
   credentials:                            # Cloud Config Credentials
-    secret:                               # Optional name of the credential secret, defaults to `cloud-config-secret`
-    username:                             # Optional name of the username entry, defaults to `username`
-    password:                             # Optional name of the password entry, defaults to `password`
-    token:                                # Optional name of the token entry, defaults to `token`
-    cert:                                 # Optional name of the public certificate entry, defaults to `cert.pem`
-    key:                                  # Optional name of the private certificate entry, defaults to `key.pem`
+    secret:     cloud-config-secret       # Optional name of the credential secret, defaults to `cloud-config-secret`
+    token:      token                     # Optional name of the token entry, defaults to `token`
+    username:   username                  # Optional name of the username entry, defaults to `username`
+    password:   password                  # Optional name of the password entry, defaults to `password`
+    cert:       cert.pem                  # Optional name of the public certificate entry, defaults to `cert.pem`
+    key:        cert.key                  # Optional name of the private certificate entry, defaults to `cert.key`
+    rootCA:     ca.pem                    # Optional name of the root CA certificate entry, defaults to `ca.pem`
   appName:      cluster                   # application name, defaults to the CloudConfig name
   label:        master                    # label used for all apps, defaults to 'master'
   appList:      services                  # application list property of AppName app
   specFile:     deployment.yaml           # app spec file, defaults to 'deployment.yaml'
   insecure:     true                      # do not require or verify SSL server certificates
-  truststore:   certs                     # secret containg all trusted certificates
-  period:       10                        # seconds between configuation cycles, 0 indicates run once
+  truststore:   global-trust-store        # Optional secret containg all trusted certificates
+  period:       10                        # seconds between configuation cycles, 0 indicates run once, defaults to 0
 
   environments:                           # Environments where apps are managed, global values can be overridden
     dev:                                  # environment key
