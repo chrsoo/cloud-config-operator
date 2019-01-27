@@ -122,7 +122,7 @@ func (r *ReconcileCloudConfigEnv) Reconcile(request reconcile.Request) (reconcil
 	}
 
 	// Don't reschedule as this is a one-off reconciliation
-	if env.Spec.Period > 1 {
+	if env.Spec.Period <= 0 {
 		reqLogger.Info("Reconciled CloudConfigEnv; no rescheduling")
 		return reconcile.Result{}, nil
 	}
