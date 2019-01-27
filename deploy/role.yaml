@@ -45,9 +45,3 @@ rules:
   - '*'
   verbs:
   - '*'
-- apiGroups:
-  - k8.se.jabberwocky
-  resources:
-  - '*'
-  verbs:
-  - '*'
