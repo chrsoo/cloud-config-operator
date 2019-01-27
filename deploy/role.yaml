@@ -1,6 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  creationTimestamp: null
   name: cloud-config-operator
 rules:
 - apiGroups:
@@ -40,6 +41,12 @@ rules:
   - create
 - apiGroups:
   - k8.jabberwocky.se
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - k8.se.jabberwocky
   resources:
   - '*'
   verbs:

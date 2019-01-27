@@ -1,0 +1,15 @@
+apiVersion:     k8.se.jabberwocky/v1alpha1
+kind:           CloudConfigEnv
+metadata:
+  name:         example-cloudconfigenv
+spec:
+  server:       cloud-config-server:8888  # Cloud Config Server name or URL
+  credentials:  cloud-config              # Cloud Config Server secret
+  label:        master                    # label used for all apps, defaults to 'master'
+  profile:      [ prd, aws ]              # Cloud Config Profile used for this environment
+  specFile:     deployment.yaml           # app spec file, defaults to 'deployment.yaml'
+  appName:      cluster                   # application name, defaults to the CloudConfig name
+  appList:      services                  # application list property of AppName app
+  insecure:     true                      # do not require or verify SSL server certificates
+  truststore:   certs                     # secret containg all trusted certificates
+  period:       10                        # seconds between configuation cycles, -1 indicates run once

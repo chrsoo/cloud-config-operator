@@ -1,4 +1,4 @@
-package v1alpha1
+package cloudconfigenv
 
 import (
 	"testing"
@@ -46,12 +46,11 @@ const (
     appName: cluster                  # application name, defaults to the CloudConfig name
     appList: services                 # application list property of AppName app
     insecure: true                    # do not require or verify SSL server certificates
-    period: 10                        # time between reconciliation cycles
 
     environments:                     # Environments where apps are managed, global values can be overridden
       dev:                            # Map key is used as the environment's name
         profile: [ dev ]              # cloud config profiles for the env
-        label:   develop
+        label:     develop
       prd:
         profile: [ prd ]
   `

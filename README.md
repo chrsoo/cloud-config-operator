@@ -56,6 +56,44 @@ TODO
 ### Different spec files per environment
 TODO
 
+## REST API
+
+(!) Planned for v0.4!
+
+### Refresh config for all apps in all environments
+
+    POST /config/{name}
+
+Optionally a JSON message in the body of the HTTP request can be used to restrict what environments and apps are refreshed.
+
+```json
+{
+  "label": "develop",
+  "env": [ "dev" ],
+  "app": [ "alpha", "beta" ]
+}
+```
+
+* `label` - only environments with a matching label are affected.
+* `env` - only environments provided in the array are affected
+* `app` - only applications provided in the array are affected
+
+### Refresh config for all apps in a given environment
+
+    POST /config/{name}/env/{env}
+
+### Refresh config for all apps and all environments using a given label
+
+    POST /config/{name}/label/{label}
+
+### Refresh config for a single app in a given environment
+
+    POST /config/{name}/env/{env}/app/{app}
+
+### Refresh config for a single app in all environments
+
+    POST /config/{name}/app/{app}
+
 ## Project Setup
 The following instructions assume Mac OS X with [Home Brew](https://brew.sh/) and a local [Minikube](https://github.com/kubernetes/minikube) as the development Kubernetes cluster:
 
@@ -75,6 +113,7 @@ __To setup the Operator SDK please follow the [Quick Start instsructions on GitH
 - [X] v0.1 `CloudConfig` CRD for managing Spring Cloud Config apps. Experimental version based on CronJob and Kubectl to get things going.
 - [ ] v0.2 `CloudConfigEnv` CRD replaces CronJob.
 - [ ] v0.3 `CloudConfigApp` CRD removes the need for `kubectl` command
+- [ ] v0.4 REST API for CI/CD integrations
 - [ ] v1.0 The first stable version of `cloud-config-operator` resource API
 
 ## References
