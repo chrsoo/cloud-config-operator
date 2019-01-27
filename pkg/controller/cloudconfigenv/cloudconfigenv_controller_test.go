@@ -2,7 +2,6 @@ package cloudconfigenv
 
 import (
 	"bytes"
-	"encoding/base64"
 	"os"
 	"os/exec"
 	"testing"
@@ -55,9 +54,7 @@ func TestAppendBearerAuthOption(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, opts, 0, "there should not be an option if both username and password are empty")
 
-	token := base64.StdEncoding.EncodeToString([]byte("TOKEN_VALUE"))
-
-	secret.Data["token"] = []byte(token)
+	secret.Data["token"] = []byte("TOKEN_VALUE")
 	opts, err = appendBearerAuthOption(opts, cr, secret)
 	assert.NoError(t, err)
 	assert.Len(t, opts, 1, "bearer auth should be configured for token secret entry")
@@ -75,16 +72,16 @@ func TestAppendBasicAuthOption(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, opts, 0, "there should not be an option if both username and password are empty")
 
-	username := base64.StdEncoding.EncodeToString([]byte("anonymous"))
+	username := []byte("anonymous")
 
-	secret.Data["username"] = []byte(username)
+	secret.Data["username"] = username
 	opts, err = appendBasicAuthOption(opts, cr, secret)
 	assert.Error(t, err, "username requires a password")
 	assert.Nil(t, opts)
 
-	password := base64.StdEncoding.EncodeToString([]byte("secret"))
+	password := []byte("secret")
 
-	secret.Data["password"] = []byte(password)
+	secret.Data["password"] = password
 	opts, err = appendBasicAuthOption(opts, cr, secret)
 	assert.NoError(t, err)
 	assert.Len(t, opts, 1, "basic auth should be configured for username and password")
@@ -94,17 +91,6 @@ func TestAppendBasicAuthOption(t *testing.T) {
 	opts, err = appendBasicAuthOption(opts, cr, secret)
 	assert.Error(t, err, "Password requires a username")
 	assert.Nil(t, opts)
-
-	secret.Data["username"] = []byte("anonymous")
-	secret.Data["password"] = []byte(password)
-	opts, err = appendBasicAuthOption(opts, cr, secret)
-	assert.Error(t, err, "username not Base64 encoded")
-
-	secret.Data["username"] = []byte(username)
-	secret.Data["password"] = []byte("secret")
-	opts, err = appendBasicAuthOption(opts, cr, secret)
-	assert.Error(t, err, "password not Base64 encoded")
-
 }
 
 func TestAppendClientCertOption(t *testing.T) {
@@ -120,16 +106,16 @@ func TestAppendClientCertOption(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, opts, 0, "there should not be an option if client cert and keys are not a secret entries")
 
-	key := base64.StdEncoding.EncodeToString([]byte(testClientKey))
+	key := []byte(testClientKey)
 
-	secret.Data["cert.key"] = []byte(key)
+	secret.Data["cert.key"] = key
 	opts, err = appendClientCertOption(opts, cr, secret)
 	assert.Error(t, err, "cert.key requires a cert.pem entry")
 	assert.Nil(t, opts)
 
-	cert := base64.StdEncoding.EncodeToString([]byte(testClientPem))
+	cert := []byte(testClientPem)
 
-	secret.Data["cert.pem"] = []byte(cert)
+	secret.Data["cert.pem"] = cert
 	opts, err = appendClientCertOption(opts, cr, secret)
 	assert.NoError(t, err)
 	assert.Len(t, opts, 1, "client certificate should be configured for cert.pem and cert.key entries")
@@ -139,34 +125,4 @@ func TestAppendClientCertOption(t *testing.T) {
 	opts, err = appendClientCertOption(opts, cr, secret)
 	assert.Error(t, err, "cert.pem requires a cert.key entry")
 	assert.Nil(t, opts)
-
-	secret.Data["cert.key"] = []byte(testClientKey)
-	secret.Data["cert.pem"] = []byte(cert)
-	opts, err = appendClientCertOption(opts, cr, secret)
-	assert.Error(t, err, "cert.key not Base64 encoded")
-
-	secret.Data["cert.key"] = []byte(testClientKey)
-	secret.Data["cert.pem"] = []byte(testClientPem)
-	opts, err = appendClientCertOption(opts, cr, secret)
-	assert.Error(t, err, "cert.pem not Base64 encoded")
-}
-
-func TestAppendTrustStoreOption(t *testing.T) {
-	var err error
-	opts := make([]func(*CloudConfigClient), 0, 1)
-
-	// we use the client.pem just to have more than one test cert!
-	clientPem := base64.StdEncoding.EncodeToString([]byte(testRootCAPem))
-	caPem := base64.StdEncoding.EncodeToString([]byte(testClientPem))
-
-	certs := map[string][]byte{
-		"ca.pem":     []byte(caPem),
-		"client.pem": []byte(clientPem),
-	}
-
-	opts, err = appendTrustStoreOption(opts, certs)
-	assert.NoError(t, err)
-	assert.Len(t, opts, 1, "trust store not configured")
-
-	// TODO assert that trust store certificates have been configured for the http client
 }

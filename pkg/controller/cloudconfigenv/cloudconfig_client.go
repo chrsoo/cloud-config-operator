@@ -26,7 +26,7 @@ type CloudConfigClient struct {
 	insecure bool
 	username string
 	password string
-	token    []byte
+	token    string
 }
 
 // Option type for the CloudConfigClient
@@ -63,21 +63,21 @@ func TrustStore(certs map[string][]byte) Option {
 }
 
 // BearerAuth configures the client to use Bearer Authentication with the provided token
-func BearerAuth(token []byte) Option {
+func BearerAuth(token string) Option {
 	return func(c *CloudConfigClient) {
-		c.token = token
+		c.token = strings.TrimSpace(token)
 	}
 }
 
 // BasicAuth configures the client to use Basic Authentication with the given username and password
 func BasicAuth(username, password string) Option {
 	return func(c *CloudConfigClient) {
-		c.username = username
-		c.password = password
+		c.username = strings.TrimSpace(username)
+		c.password = strings.TrimSpace(password)
 	}
 }
 
-// ClientCert side SSL configures the client to use Basic Authentication with the given username and password
+// ClientCert configures the client to use a SSL client certificate
 func ClientCert(cert, key []byte) Option {
 
 	tlsCert, err := tls.X509KeyPair(cert, key)
