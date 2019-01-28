@@ -27,34 +27,52 @@ spec:
     prd:
       profile: [ prd ]
 ```
-## Usage
-
+## Overview
 Cloud Config Apps exist in a number of `environments`. Each environment is
 defined by a list of `profiles` and a `label`.
 
-For each environment in `environments`, Spring Cloud Operator will
+For each *environment* in `environments`, Spring Cloud Operator will
 
-* Retrieve the app's `specFile` from the Spring Cloud Config Server
-* Apply the `specFile` to the Kubernetes cluster
+* Retrieve the `appList` list of applications for the `appName` application;
+* Retrieve the `specFile` Kubernetes YAML file for each app on the list;
+* Pipe the concatenated YAML spec files to the following `kubectl` command:
+  ```
+  kubectl apply -ns <environment> --purge -f -
+  ```
+(Ideally we should get rid of using `kubectl` and instead implement the synchronization logic in the operator using the Kubernetes API machinery; this is subject to a future release)
+### Spring Cloud Config Example
+
+The examples that follow assume a Spring Cloud Config Server backed by a Git repository (or file system) similar to the [test repository](test/server/repository). This can be used to back a Spring Cloud Config Server test deployment as found in the [cloud-config-server.yaml](test/deploy/cloud-config-server.yaml) file. Note that this Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
 
 ### App or List of Apps
 
 A CloudConfig can either define a single App or a list of Apps.
 
-In the first case the `appName` is the name of the Spring Cloud Config application
+In the first case the `appName` is the name of the Spring Cloud Config application.
 
-In the second case the `appName` defines the application that contains a single
-configuration property `appList` that lists the Apps to manage. This property
+In the second case the `appName` defines the application that must contain at least the configuration property defined by `appList` that lists the Apps to manage. This property
 can have different values in different environments.
 
-### Environments and namespaces
-TODO
+### Environments and Namespaces
+An environment manages a single namespace named after the `CloudConfig` and the environment. For example given the example above with the `CloudConfig` name `test` the `prd` environment manages the namespace  `test-prd`
 
-### Versioning per environment
-TODO
+### Versioning of Apps
+As we typically want to propagate a new App version through the different environments, e.g. from `dev` to `prd` (in many enterprises there would also be a `qua` for quality assurance etc) it makes sense to make the App version configurable per environment.
 
-### Different spec files per environment
-TODO
+In the configuration repository this could be managed by having the file `alpha-dev.yaml` contain the property field
+```
+version: 1.2.0-SNAPSHOT
+```
+... and `alpha-prd.yaml` contain the current stable version
+```
+version: 1.1.0
+```
+### Kubernetes specification files
+In order to manage Kubernetes deployments for the apps we use the `specFile` property. This contains the name of the Spring Cloud Config template file used to deploy the apps, e.g. [deployment.yaml](test/server/repository/deployment.yaml).
+
+The template file contains property placeholders which will be filed in by the configuration values for which the file is retrieved.
+
+Note that a deployment file can be replaced for each application (cf. the [deployment.yaml](test/server/repository/gamma/deployment.yaml) for the gamma example app.) The file can also be different per environment etc.
 
 ## REST API
 
