@@ -44,7 +44,7 @@ For each *environment* in `environments`, Spring Cloud Operator will
 
 The examples that follow assume a Spring Cloud Config Server backed by a Git repository (or file system) similar to the [test repository](test/server/repository). This file repository can be used to back a Spring Cloud Config Server test deployment as found in the [cloud-config-server.yaml](test/deploy/cloud-config-server.yaml) file.
 
-(!) Note the Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
+:warning:   Note the Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
 
 ### App or List of Apps
 
@@ -78,7 +78,7 @@ Note that a deployment file can be replaced for each application (cf. the [deplo
 
 ## REST API
 
-(!) Planned for v0.3!
+:warning: Planned for v0.3!
 
 ### Refresh config for all apps in all environments
 
