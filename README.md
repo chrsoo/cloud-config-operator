@@ -14,7 +14,7 @@ metadata:
   name: test
 spec:
   server: cloud-config-server:8888  # Cloud Config Server name or URL
-  secert: cloud-config              # Cloud Config Server secret
+  secret: cloud-config              # Cloud Config Server secret
   label: master                     # label used for all apps, defaults to 'master'
   specFile: deployment.yaml         # app spec file, defaults to 'deployment.yaml'
   appName: cluster                  # application name, defaults to the CloudConfig name
@@ -42,7 +42,9 @@ For each *environment* in `environments`, Spring Cloud Operator will
 (Ideally we should get rid of using `kubectl` and instead implement the synchronization logic in the operator using the Kubernetes API machinery; this is subject to a future release)
 ### Spring Cloud Config Example
 
-The examples that follow assume a Spring Cloud Config Server backed by a Git repository (or file system) similar to the [test repository](test/server/repository). This can be used to back a Spring Cloud Config Server test deployment as found in the [cloud-config-server.yaml](test/deploy/cloud-config-server.yaml) file. Note that this Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
+The examples that follow assume a Spring Cloud Config Server backed by a Git repository (or file system) similar to the [test repository](test/server/repository). This file repository can be used to back a Spring Cloud Config Server test deployment as found in the [cloud-config-server.yaml](test/deploy/cloud-config-server.yaml) file.
+
+(!) Note the Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
 
 ### App or List of Apps
 
