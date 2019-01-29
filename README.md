@@ -102,12 +102,12 @@ Optionally a JSON message in the body of the HTTP request can be used to restric
 
 Restrictions can also be applied by adding `label`, `env` and `app` to the URI path:
 
-| Request | Usecase | Comment |
-| ------- | ------- | ------- |
-| `POST /config/{name}/env/{env}` | Refresh config for all apps in a given environment | |
-| `POST /config/{name}/label/{label}` | Refresh config for all apps and all environments using a given label | |
-| `POST /config/{name}/env/{env}/app/{app}` | Refresh config for a single app in a given environment | |
-| `POST /config/{name}/app/{app}` | Refresh config for a single app in all environments | |
+| Request | Usecase |
+| ------- | ------- |
+| `POST /config/{name}/env/{env}` | Refresh config for all apps in a given environment |
+| `POST /config/{name}/label/{label}` | Refresh config for all apps and all environments using a given label |
+| `POST /config/{name}/env/{env}/app/{app}` | Refresh config for a single app in a given environment |
+| `POST /config/{name}/app/{app}` | Refresh config for a single app in all environments |
 
 ## Project Setup
 The following instructions assume Mac OS X with [Home Brew](https://brew.sh/) and a local [Minikube](https://github.com/kubernetes/minikube) as the development Kubernetes cluster:
