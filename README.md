@@ -15,22 +15,22 @@ metadata:
 spec:
   server:       cloud-config-server:8888  # Cloud Config Server name or URL
   credentials:                            # Cloud Config Credentials
-    secret:     cloud-config-secret       # Optional name of the credential secret, defaults to `cloud-config-secret`
-    token:      token                     # Optional name of the token entry, defaults to `token`
-    username:   username                  # Optional name of the username entry, defaults to `username`
-    password:   password                  # Optional name of the password entry, defaults to `password`
-    cert:       cert.pem                  # Optional name of the public certificate entry, defaults to `cert.pem`
-    key:        cert.key                  # Optional name of the private certificate entry, defaults to `cert.key`
-    rootCA:     ca.pem                    # Optional name of the root CA certificate entry, defaults to `ca.pem`
-  appName:      cluster                   # application name, defaults to the CloudConfig name
+    secret:     cloud-config-secret       # Name of the credential secret, required for credentials
+    token:      token                     # Name of the token entry, defaults to `token`
+    username:   username                  # Name of the username entry, defaults to `username`
+    password:   password                  # Name of the password entry, defaults to `password`
+    cert:       cert.pem                  # Name of the cert entry, defaults to `cert.pem`
+    key:        cert.key                  # Name of the private key entry, defaults to `cert.key`
+    rootCA:     ca.pem                    # Name of the CA cert entry, defaults to `ca.pem`
+  appName:      cluster                   # app name, defaults to the CloudConfig name
   label:        master                    # label used for all apps, defaults to 'master'
-  appList:      services                  # application list property of AppName app
+  appList:      services                  # app list property in the app config
   specFile:     deployment.yaml           # app spec file, defaults to 'deployment.yaml'
-  insecure:     true                      # do not require or verify SSL server certificates
-  truststore:   global-trust-store        # Optional secret containg all trusted certificates
-  period:       10                        # seconds between configuation cycles, 0 indicates run once, defaults to 0
+  insecure:     true                      # do not require or verify SSL server certs
+  truststore:   global-trust-store        # Optional secret containg all trusted certs
+  period:       10                        # seconds between configuation cycles, defaults to 0 (disabled)
 
-  environments:                           # Environments where apps are managed, global values can be overridden
+  environments:                           # Environments where apps are managed, defaults to global conf
     dev:                                  # environment key
       name:     Development               # environment name, defaults to the key value
       profile:  [ dev ]                   # cloud config profiles for the env
