@@ -8,24 +8,34 @@ Cloud Config Operator will monitor and synchronize with the cluster state.
 CloudConfig CRD example:
 
 ```yaml
-apiVersion: k8.jabberwocky.se/v1alpha1
-kind: CloudConfig
+apiVersion:     k8.jabberwocky.se/v1alpha1
+kind:           CloudConfig
 metadata:
-  name: test
+  name:         test                      # CloudConfig name
 spec:
-  server: cloud-config-server:8888  # Cloud Config Server name or URL
-  secret: cloud-config              # Cloud Config Server secret
-  label: master                     # label used for all apps, defaults to 'master'
-  specFile: deployment.yaml         # app spec file, defaults to 'deployment.yaml'
-  appName: cluster                  # application name, defaults to the CloudConfig name
-  appList: services                 # application list property of AppName app
-  insecure: true                    # do not require or verify SSL server certificates
+  server:       cloud-config-server:8888  # Cloud Config Server name or URL
+  credentials:                            # Cloud Config Credentials
+    secret:     cloud-config-secret       # Optional name of the credential secret, defaults to `cloud-config-secret`
+    token:      token                     # Optional name of the token entry, defaults to `token`
+    username:   username                  # Optional name of the username entry, defaults to `username`
+    password:   password                  # Optional name of the password entry, defaults to `password`
+    cert:       cert.pem                  # Optional name of the public certificate entry, defaults to `cert.pem`
+    key:        cert.key                  # Optional name of the private certificate entry, defaults to `cert.key`
+    rootCA:     ca.pem                    # Optional name of the root CA certificate entry, defaults to `ca.pem`
+  appName:      cluster                   # application name, defaults to the CloudConfig name
+  label:        master                    # label used for all apps, defaults to 'master'
+  appList:      services                  # application list property of AppName app
+  specFile:     deployment.yaml           # app spec file, defaults to 'deployment.yaml'
+  insecure:     true                      # do not require or verify SSL server certificates
+  truststore:   global-trust-store        # Optional secret containg all trusted certificates
+  period:       10                        # seconds between configuation cycles, 0 indicates run once, defaults to 0
 
-  environments:                     # Environments where apps are managed, global values can be overridden
-    dev:                            # Map key is used as the environment's name
-      profile: [ dev ]              # cloud config profiles for the env
+  environments:                           # Environments where apps are managed, global values can be overridden
+    dev:                                  # environment key
+      name:     Development               # environment name, defaults to the key value
+      profile:  [ dev ]                   # cloud config profiles for the env
     prd:
-      profile: [ prd ]
+      profile:  [ prd ]
 ```
 ## Overview
 Cloud Config Apps exist in a number of `environments`. Each environment is
