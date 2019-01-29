@@ -80,9 +80,11 @@ Note that a deployment file can be replaced for each application (cf. the [deplo
 
 :warning: Planned for v0.3!
 
-### Refresh config for all apps in all environments
+Posting to the URI
 
     POST /config/{name}
+
+Will refresh all Apps for all Environments for the given CloudConfig `name`
 
 Optionally a JSON message in the body of the HTTP request can be used to restrict what environments and apps are refreshed.
 
@@ -98,21 +100,14 @@ Optionally a JSON message in the body of the HTTP request can be used to restric
 * `env` - only environments provided in the array are affected
 * `app` - only applications provided in the array are affected
 
-### Refresh config for all apps in a given environment
+Restrictions can also be applied by adding `label`, `env` and `app` to the URI path:
 
-    POST /config/{name}/env/{env}
-
-### Refresh config for all apps and all environments using a given label
-
-    POST /config/{name}/label/{label}
-
-### Refresh config for a single app in a given environment
-
-    POST /config/{name}/env/{env}/app/{app}
-
-### Refresh config for a single app in all environments
-
-    POST /config/{name}/app/{app}
+| Request | Usecase | Comment |
+| ------- | ------- | ------- |
+| `POST /config/{name}/env/{env}` | Refresh config for all apps in a given environment | |
+| `POST /config/{name}/label/{label}` | Refresh config for all apps and all environments using a given label | |
+| `POST /config/{name}/env/{env}/app/{app}` | Refresh config for a single app in a given environment | |
+| `POST /config/{name}/app/{app}` | Refresh config for a single app in all environments | |
 
 ## Project Setup
 The following instructions assume Mac OS X with [Home Brew](https://brew.sh/) and a local [Minikube](https://github.com/kubernetes/minikube) as the development Kubernetes cluster:
