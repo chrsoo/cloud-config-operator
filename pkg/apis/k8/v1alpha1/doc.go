@@ -4,9 +4,5 @@
 package v1alpha1
 
 /*
-Implementation Notes
-
-CloudConfig Controller
-- Each CloudConfig object maps to a CronJob that will periodically synchronize the CloudConfiguration
-- The actual state is found by enumerating all CronJobs labeled `cloud-config`
+TODO Implementation Notes
 */

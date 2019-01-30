@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	k8v1alpha1 "github.com/chrsoo/cloud-config-operator/pkg/apis/k8/v1alpha1"
-	cronv1 "k8s.io/api/batch/v1beta1"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -53,14 +52,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// TODO(User) Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner CloudConfig
-	err = c.Watch(&source.Kind{Type: &cronv1.CronJob{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &k8v1alpha1.CloudConfig{},
-	})
-	if err != nil {
-		return err
-	}
-
+	/* 	err = c.Watch(&source.Kind{Type: &cronv1.CronJob{}}, &handler.EnqueueRequestForOwner{
+	   		IsController: true,
+	   		OwnerType:    &k8v1alpha1.CloudConfig{},
+	   	})
+	   	if err != nil {
+	   		return err
+	   	}
+	*/
 	return nil
 }
 
