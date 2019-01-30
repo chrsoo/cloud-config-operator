@@ -86,6 +86,19 @@ The template file contains property placeholders which will be filed in by the c
 
 Note that a deployment file can be replaced for each application (cf. the [deployment.yaml](test/server/repository/gamma/deployment.yaml) for the gamma example app.) The file can also be different per environment etc.
 
+## Install
+
+```
+# Add the CRD's
+kubectl apply -f deploy/crds/k8_v1alpha1_cloudconfig_crd.yaml -f deploy/crds/k8_v1alpha1_cloudconfigenv_crd.yaml
+
+# Don't forget to review and adapt role.yaml before applying to the cluster!
+kubectl apply -f deploy/role.yaml -f deploy/role_binding.yaml -f deploy/service_account
+
+# Deploy the operator
+sed 's|REPLACE_IMAGE|dtr.richemont.com/digital/cloud-config-operator:0.2.0|g' deploy/operator.yaml | kubectl apply -f -
+```
+
 ## REST API
 
 :warning: Planned for v0.3!
