@@ -99,6 +99,16 @@ kubectl apply -f deploy/role.yaml -f deploy/role_binding.yaml -f deploy/service_
 sed 's|REPLACE_IMAGE|dtr.richemont.com/digital/cloud-config-operator:0.2.0|g' deploy/operator.yaml | kubectl apply -f -
 ```
 
+###Adapt the cloud-config-operator role
+The `cloud-config-operator` role defined in [deploy/role.yaml] should be adapted to the specific needs of your Kubernetes cluster. The following permissions are required for the basic operation of the `cloud-config-operator`
+
+// TODO tune the rules required for the operation of cloud-config-operator
+- watch, list , retrieve, create, update and delete namespaces
+  ```yaml
+  // TODO add role yaml rules
+  ```
+In addition the operator needs to have all the required permissions to manage the apps. Typically this means creating, retrieving and deleting deployments but additional rules  may be required if for example the apps define `CronJob`s in their YAML specifications.
+
 ## REST API
 
 :warning: Planned for v0.3!
