@@ -1,9 +1,10 @@
-apiVersion: k8.jabberwocky.se/v1alpha1
+apiVersion: k8s.jabberwocky.se/v1alpha1
 kind: CloudConfig
 metadata:
   name: test
 spec:
-  server: cloud-config-server:8888  # Cloud Config Server name or URL
+  # server: cloud-config-server.default:8888  # Cloud Config Server name or URL when running as deployment
+  server: localhost:8888            # Cloud Config Server name or URL when running operator in local mode
   secert: cloud-config              # Cloud Config Server secret
   label: master                     # label used for all apps, defaults to 'master'
   specFile: deployment.yaml         # app spec file, defaults to 'deployment.yaml'

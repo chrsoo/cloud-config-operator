@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/chrsoo/cloud-config-operator/pkg/apis/k8/v1alpha1"
+	"github.com/chrsoo/cloud-config-operator/pkg/apis/k8s/v1alpha1"
 )
 
 func init() {
