@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"testing"
 
-	k8v1alpha1 "github.com/chrsoo/cloud-config-operator/pkg/apis/k8/v1alpha1"
+	k8v1alpha1 "github.com/chrsoo/cloud-config-operator/pkg/apis/k8s/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 )

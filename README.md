@@ -8,7 +8,7 @@ Cloud Config Operator will monitor and synchronize with the cluster state.
 CloudConfig CRD example:
 
 ```yaml
-apiVersion:     k8.jabberwocky.se/v1alpha1
+apiVersion:     k8s.jabberwocky.se/v1alpha1
 kind:           CloudConfig
 metadata:
   name:         test                      # CloudConfig name

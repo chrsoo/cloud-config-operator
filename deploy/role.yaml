@@ -39,7 +39,7 @@ rules:
   - get
   - create
 - apiGroups:
-  - k8.jabberwocky.se
+  - k8s.jabberwocky.se
   resources:
   - '*'
   verbs:

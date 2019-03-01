@@ -1,4 +1,4 @@
-apiVersion:     k8.se.jabberwocky/v1alpha1
+apiVersion:     k8s.se.jabberwocky/v1alpha1
 kind:           CloudConfigEnv
 metadata:
   name:         test-prd
