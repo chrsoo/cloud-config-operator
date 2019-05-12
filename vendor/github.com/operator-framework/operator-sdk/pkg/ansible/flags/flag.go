@@ -16,30 +16,36 @@ package flags
 
 import (
 	"strings"
-	"time"
 
+	"github.com/operator-framework/operator-sdk/pkg/internal/flags"
+	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	"github.com/spf13/pflag"
 )
 
 // AnsibleOperatorFlags - Options to be used by an ansible operator
 type AnsibleOperatorFlags struct {
-	ReconcilePeriod time.Duration
-	WatchesFile     string
+	flags.WatchFlags
+	InjectOwnerRef bool
+	MaxWorkers     int
 }
 
 // AddTo - Add the ansible operator flags to the the flagset
 // helpTextPrefix will allow you add a prefix to default help text. Joined by a space.
 func AddTo(flagSet *pflag.FlagSet, helpTextPrefix ...string) *AnsibleOperatorFlags {
 	aof := &AnsibleOperatorFlags{}
-	flagSet.DurationVar(&aof.ReconcilePeriod,
-		"reconcile-period",
-		time.Minute,
-		strings.Join(append(helpTextPrefix, "Default reconcile period for controllers"), " "),
+	aof.WatchFlags.AddTo(flagSet, helpTextPrefix...)
+	flagSet.AddFlagSet(zap.FlagSet())
+	flagSet.BoolVar(&aof.InjectOwnerRef,
+		"inject-owner-ref",
+		true,
+		strings.Join(append(helpTextPrefix, "The ansible operator will inject owner references unless this flag is false"), " "),
 	)
-	flagSet.StringVar(&aof.WatchesFile,
-		"watches-file",
-		"./watches.yaml",
-		strings.Join(append(helpTextPrefix, "Path to the watches file to use"), " "),
+	flagSet.IntVar(&aof.MaxWorkers,
+		"max-workers",
+		1,
+		strings.Join(append(helpTextPrefix,
+			"Maximum number of workers to use. Overridden by environment variable."),
+			" "),
 	)
 	return aof
 }
