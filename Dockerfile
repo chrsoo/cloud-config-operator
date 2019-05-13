@@ -3,7 +3,6 @@ FROM chrsoo/operator-sdk AS builder
 ENV NAMESPACE=chrsoo
 ENV NAME=cloud-config-operator
 
-WORKDIR /go/src/github.com/${NAMESPACE}/${NAME}
 COPY . /go/src/github.com/${NAMESPACE}/${NAME}
 RUN go build $GOFLAGS -o /go/bin/${NAME} github.com/${NAMESPACE}/${NAME}/cmd/manager
 
