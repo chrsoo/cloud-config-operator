@@ -2,12 +2,12 @@
 
 
 [[projects]]
-  digest = "1:75a1e28db58f0ddf4016b7ce798d6d9e3b0aab01b7a9921972a68e95f2eec352"
+  digest = "1:fc54519ca54240db24092a6d9a4b07aa373e27a8daf56c8594069e1c3e2cae06"
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
   pruneopts = "NT"
-  revision = "8c41231e01b2085512d98153bcffb847ff9b4b9f"
-  version = "v0.38.0"
+  revision = "775730d6e48254a2430366162cf6298e5368833c"
+  version = "v0.39.0"
 
 [[projects]]
   digest = "1:0a111edd8693fd977f42a0c4f199a0efb13c20aec9da99ad8830c7bb6a87e8d6"
@@ -269,7 +269,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f9ce13373683260c45064f0839d588437ce75aaac44bce269be43d75af48880f"
+  digest = "1:464c190490b9a0cb583c3dd7674d256e779833e01519683ee98a1727e93ac974"
   name = "github.com/operator-framework/operator-sdk"
   packages = [
     "pkg/k8sutil",
@@ -278,7 +278,7 @@
     "version",
   ]
   pruneopts = "NT"
-  revision = "75c866e992a8f3ca88c7c9e51924e568efde7bd5"
+  revision = "ead640af152a0ea4656972f0f7a469a388eba946"
 
 [[projects]]
   digest = "1:93b1d84c5fa6d1ea52f4114c37714cddd84d5b78f151b62bb101128dd51399bf"
@@ -404,11 +404,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b26b35b460d7db774c4aba5d2d6c7f34b5cafe0b3f3bb25faa6c49234a2a70f0"
+  digest = "1:af1fe3e40e947f75bee6d1f3b3610fa859079ddc4706634d5360213d7e70b954"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "NT"
-  revision = "cbcb750295291b33242907a04be40e80801d0cfc"
+  revision = "22d7a77e9e5f409e934ed268692e56707cd169e5"
 
 [[projects]]
   branch = "master"
@@ -486,7 +486,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2045a4032fee3b7a701a49d1ccdcfe1cd06667640b2cbdb708846acbdb70ed5e"
+  digest = "1:01a1deb70c716c231bdc7c48c21ac86c82e6f001e018593c24f0c14e542e92bf"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -502,7 +502,7 @@
     "internal/semver",
   ]
   pruneopts = "NT"
-  revision = "99f201b6807eb28f750a1966316bb0d4417b6020"
+  revision = "d81a07b7e58487eed036bf115fa834653590d6cd"
 
 [[projects]]
   digest = "1:711179d92dbef98932acd7afd0dab80b4cf2d97f099f3285c9ba8fa451809fec"
