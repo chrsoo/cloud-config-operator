@@ -5,6 +5,7 @@ ENV NAME=cloud-config-operator
 
 COPY . /go/src/github.com/${NAMESPACE}/${NAME}/
 RUN cd /go/src/github.com/${NAMESPACE}/${NAME} \
+    && dep ensure \
     && go build $GOFLAGS -o /go/bin/${NAME} github.com/${NAMESPACE}/${NAME}/cmd/manager
 
 # Base image
