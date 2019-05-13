@@ -2,6 +2,7 @@
 
 
 [[projects]]
+
   digest = "1:fc54519ca54240db24092a6d9a4b07aa373e27a8daf56c8594069e1c3e2cae06"
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
@@ -34,7 +35,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:4b8b5811da6970495e04d1f4e98bb89518cc3cfc3b3f456bdb876ed7b6c74049"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "NT"
@@ -826,6 +826,11 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/chrsoo/cloud-config-operator/pkg/apis",
+    "github.com/chrsoo/cloud-config-operator/pkg/apis/k8s/v1alpha1",
+    "github.com/chrsoo/cloud-config-operator/pkg/controller",
+    "github.com/chrsoo/cloud-config-operator/pkg/controller/cloudconfig",
+    "github.com/chrsoo/cloud-config-operator/pkg/controller/cloudconfigenv",
     "github.com/go-logr/logr",
     "github.com/imdario/mergo",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
