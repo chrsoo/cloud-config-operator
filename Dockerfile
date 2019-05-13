@@ -3,8 +3,9 @@ FROM chrsoo/operator-sdk AS builder
 ENV NAMESPACE=chrsoo
 ENV NAME=cloud-config-operator
 
-COPY . /go/src/github.com/${NAMESPACE}/${NAME}
-RUN go build $GOFLAGS -o /go/bin/${NAME} github.com/${NAMESPACE}/${NAME}/cmd/manager
+COPY . /go/src/github.com/${NAMESPACE}/${NAME}/
+RUN cd /go/src/github.com/${NAMESPACE}/${NAME} \
+    && go build $GOFLAGS -o /go/bin/${NAME} github.com/${NAMESPACE}/${NAME}/cmd/manager
 
 # Base image
 FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:7.6
