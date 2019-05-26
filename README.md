@@ -2,10 +2,10 @@
 Provision Kubernetes applications using Spring Cloud Config Server with a GitOps approach.
 
 ## Custom Resource Definition
-The `CloudConfig` CRD defines one or more Spring Cloud Config Apps that that
+The `CloudConfig` CR defines one or more Spring Cloud Config Apps that that
 Cloud Config Operator will monitor and synchronize with the cluster state.
 
-CloudConfig CRD example:
+CloudConfig CR example:
 
 ```yaml
 apiVersion:     k8s.jabberwocky.se/v1alpha1
@@ -50,35 +50,41 @@ For each *environment* in `environments`, Spring Cloud Operator will
   kubectl apply -ns <environment> --purge -f -
   ```
 (Ideally we should get rid of using `kubectl` and instead implement the synchronization logic in the operator using the Kubernetes API machinery; this is subject to a future release)
+
 ### Spring Cloud Config Example
 
 The examples that follow assume a Spring Cloud Config Server backed by a Git repository (or file system) similar to the [test repository](test/server/repository). This file repository can be used to back a Spring Cloud Config Server test deployment as found in the [cloud-config-server.yaml](test/deploy/cloud-config-server.yaml) file.
 
-:warning:   Note the Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
+:warning: Note the Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
 
 ### App or List of Apps
 
-A CloudConfig can either define a single App or a list of Apps.
+A CloudConfig can either target a single App or a list of Apps. If `appList` is set it indicates the name of field that contains a list of apps to be managed and
 
-In the first case the `appName` is the name of the Spring Cloud Config application.
+If the `appName` is set and the `appList` is not specified a single application is managed. If the `appList` is given it indicates the name of the App property used to specify the list of Apps to be manged.
 
-In the second case the `appName` defines the application that must contain at least the configuration property defined by `appList` that lists the Apps to manage. This property
-can have different values in different environments.
+The `appList` can have different values in different environments.
 
 ### Environments and Namespaces
 An environment manages a single namespace named after the `CloudConfig` and the environment. For example given the example above with the `CloudConfig` name `test` the `prd` environment manages the namespace  `test-prd`
 
 ### Versioning of Apps
-As we typically want to propagate a new App version through the different environments, e.g. from `dev` to `prd` (in many enterprises there would also be a `qua` for quality assurance etc) it makes sense to make the App version configurable per environment.
+As we typically want to promote App versions through the different environments, e.g. from `dev` to `qua` to `prd`, it makes sense to make the App version configurable per environment.
 
-In the configuration repository this could be managed by having the file `alpha-dev.yaml` contain the property field
-```
-version: 1.2.0-SNAPSHOT
-```
-... and `alpha-prd.yaml` contain the current stable version
-```
-version: 1.1.0
-```
+For example given that the `alpha` application defines a  `version` property the corresponding configuration files in a Spring Cloud Config Git repository could look like...
+
+__alpha-dev.yaml__
+
+    version: 1.1.2-SNAPSHOT
+
+__alpha-qua.yaml__
+
+    version: 1.1.1
+
+__alpha-prd.yaml__
+
+    version: 1.0.4
+
 ### Kubernetes specification files
 In order to manage Kubernetes deployments for the apps we use the `specFile` property. This contains the name of the Spring Cloud Config template file used to deploy the apps, e.g. [deployment.yaml](test/server/repository/deployment.yaml).
 
@@ -99,7 +105,7 @@ kubectl apply -f deploy/role.yaml -f deploy/role_binding.yaml -f deploy/service_
 sed 's|REPLACE_IMAGE|dtr.richemont.com/digital/cloud-config-operator:0.2.0|g' deploy/operator.yaml | kubectl apply -f -
 ```
 
-###Adapt the cloud-config-operator role
+### Adapt the cloud-config-operator role
 The `cloud-config-operator` role defined in [deploy/role.yaml] should be adapted to the specific needs of your Kubernetes cluster. The following permissions are required for the basic operation of the `cloud-config-operator`
 
 // TODO tune the rules required for the operation of cloud-config-operator
