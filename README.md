@@ -117,11 +117,10 @@ spec:
 ```
 
 ## Installation
-### Add the CRD's
-Add the Custom Resource Definitions to the cluster:
+### Add the CRD
+Add the Custom Resource Definition to the cluster:
 ```
 kubectl apply -f deploy/crds/cloudconfig_crd.yaml
-kubectl apply -f deploy/crds/cloudconfigenv_crd.yaml
 ```
 
 ### Adapt and add the ClusterRole
@@ -146,19 +145,21 @@ sed 's|REPLACE_IMAGE|chrsoo/cloud-config-operator:latest|g' deploy/operator.yaml
 ## Usage
 Synchronziation of a `CloudConfig` application (or list of applications) is started by creating the CR:
 ```
-export NAMESPACE="production"
+export NAMESPACE="default"
 
-cat <<<EOF
+cat <<EOF | kubectl --namespace ${NAMESPACE} apply -f -
 apiVersion:     k8s.jabberwocky.se/v1alpha1
 kind:           CloudConfig
 metadata:
-  name:         my-app
+  name:         cluster
 spec:
+  server:       http://cloud-config-server:8888
+  insecure:     true
   credentials:
-    secret:     cloud-config-secret
+    secret:     cloud-config-credentials
   profile:      [ prd, us-west ]
   period:       10
-EOF | kubectl --namespace ${NAMESPACE} apply -f -
+EOF
 ```
 To stop synchronization simply delete the CR.
 

@@ -1,4 +1,4 @@
-package cloudconfigenv
+package cloudconfig
 
 import (
 	"encoding/base64"

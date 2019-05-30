@@ -1,4 +1,4 @@
-package cloudconfigenv
+package cloudconfig
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
-var log = logf.Log.WithName("controller_cloudconfigenv")
+var log = logf.Log.WithName("controller_cloudconfig")
 
 // CloudConfigClient manages connections to a Spring Cloud Config Server
 type CloudConfigClient struct {

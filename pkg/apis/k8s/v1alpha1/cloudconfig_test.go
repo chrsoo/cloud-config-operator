@@ -21,17 +21,10 @@ const (
     server: cloud-config-server   # Cloud Config Server name or URL
     secret: cloud-config          # Cloud Config Server secret
     label: master                 # label used for all apps, defaults to 'master'
+    profile: [ prd ]
     specFile: deployment.yaml     # app spec file, defaults to 'deployment.yaml'
     appName: cluster              # application name, defaults to the CloudConfig name
     appList: services             # application list property of AppName app
-
-    environments:                 # Environments where apps are managed, global values can be overridden
-      dev:                        # environment key
-        name: Development         # environment name, defaults to the key value
-        profile: [ dev ]          # cloud config profiles for the env
-        label: develop            # optionally override the global label
-      prd:
-        profile: [ prd ]
     `
 	CloudConfigExample = `
   apiVersion: k8s.jabberwocky.se/v1alpha1
@@ -40,21 +33,14 @@ const (
     name: test
   spec:
     server: cloud-config-server:8888  # Cloud Config Server name or URL
-    secert: cloud-config              # Cloud Config Server secret
+    secret: cloud-config              # Cloud Config Server secret
     label: master                     # label used for all apps, defaults to 'master'
+    profile: [ prd ]
     specFile: deployment.yaml         # app spec file, defaults to 'deployment.yaml'
     appName: cluster                  # application name, defaults to the CloudConfig name
     appList: services                 # application list property of AppName app
     insecure: true                    # do not require or verify SSL server certificates
-    period: 10                        # time between reconciliation cycles
-
-    environments:                     # Environments where apps are managed, global values can be overridden
-      dev:                            # Map key is used as the environment's name
-        profile: [ dev ]              # cloud config profiles for the env
-        label:   develop
-      prd:
-        profile: [ prd ]
-  `
+    period: 10                        # time between reconciliation cycles  `
 )
 
 // -- helper methods
