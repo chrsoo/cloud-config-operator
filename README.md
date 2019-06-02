@@ -215,7 +215,7 @@ __To setup the Operator SDK please follow the [Quick Start instsructions on GitH
 ## Roadmap
 
 - [X] v0.1 `CloudConfig` CRD for managing Spring Cloud Config apps. Experimental version based on CronJob and Kubectl to get things going.
-- [X] v0.2 `CloudConfigEnv` CRD replaces CronJob.
+- [X] v0.2 `CloudConfig` Removed CronJob.
 - [ ] v0.3 REST API for CI/CD integrations
 - [ ] v0.4 `CloudConfigApp` CRD removes the `kubectl` dependency
 - [ ] v1.0 The first stable version of `cloud-config-operator` resource API
