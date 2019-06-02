@@ -42,15 +42,15 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:fbf41b1308f113e19ad9fbb20a62665c10c5271f487be09972e37c3120254b16"
+  digest = "1:13c005cd1497b291d3aaf711086e94f6046efb7f104db33208bff268f0187213"
   name = "github.com/emicklei/go-restful"
   packages = [
     ".",
     "log",
   ]
   pruneopts = "NT"
-  revision = "103c9496ad8f7e687b8291b56750190012091a96"
-  version = "v2.9.4"
+  revision = "6ac3b8eb89d325e5c750d77f344a6870464d03c3"
+  version = "v2.9.6"
 
 [[projects]]
   digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
@@ -269,7 +269,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:464c190490b9a0cb583c3dd7674d256e779833e01519683ee98a1727e93ac974"
+  digest = "1:66095c393bd50c748450fdbdd4d0e4f6697fd0f77e4942463a2dbaa9fa152bea"
   name = "github.com/operator-framework/operator-sdk"
   packages = [
     "pkg/k8sutil",
@@ -278,7 +278,7 @@
     "version",
   ]
   pruneopts = "NT"
-  revision = "ead640af152a0ea4656972f0f7a469a388eba946"
+  revision = "e9e59c05d39a36bd3f52ac46f4893ff80749d922"
 
 [[projects]]
   digest = "1:93b1d84c5fa6d1ea52f4114c37714cddd84d5b78f151b62bb101128dd51399bf"
@@ -290,11 +290,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bf2ac97824a7221eb16b096aecc1c390d4c8a4e49524386aaa2e2dd215cbfb31"
+  digest = "1:ca71dc35a821dd1d5cef16dab21648793f0c675297bfda31eaa0175d0eafd26f"
   name = "github.com/petar/GoLLRB"
   packages = ["llrb"]
   pruneopts = "NT"
-  revision = "53be0d36a84c2a886ca057d34b6aa4468df9ccb4"
+  revision = "33fb24c13b99c46c93183c291836c573ac382536"
 
 [[projects]]
   digest = "1:d8139b87c97ab035e546f58bb812ec6eb11518ec7dff03694e5427bc67ca7c0f"
@@ -313,7 +313,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:ec2a29e3bd141038ae5c3d3a4f57db0c341fcc1d98055a607aedd683aed124ee"
+  digest = "1:2e0311ed50c341b1db895df8a48ef719fc66699ebc35b80048f82b99f31a3f2d"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
@@ -321,8 +321,8 @@
     "prometheus/promhttp",
   ]
   pruneopts = "NT"
-  revision = "505eaef017263e299324067d40ca2c48f6a2cf50"
-  version = "v0.9.2"
+  revision = "50c4339db732beb2165735d2cde0bff78eb3c5a5"
+  version = "v0.9.3"
 
 [[projects]]
   branch = "master"
@@ -333,7 +333,7 @@
   revision = "fd36f4220a901265f90734c3183c5f0c91daa0b8"
 
 [[projects]]
-  digest = "1:d58e080134e5ca08ba6beebade31362d5f56e64fdb6dd649ec8b5e52445e8489"
+  digest = "1:70a61f24e419a65b6f030b73f66b620da038e57089165577bdf945f3c3bb8b51"
   name = "github.com/prometheus/common"
   packages = [
     "expfmt",
@@ -341,19 +341,19 @@
     "model",
   ]
   pruneopts = "NT"
-  revision = "1ba88736f028e37bc17328369e94a537ae9e0234"
-  version = "v0.4.0"
+  revision = "17f5ca1748182ddf24fc33a5a7caaaf790a52fcc"
+  version = "v0.4.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:bca8581280a9ba8187941c57f08a89baeaeb87e97f3f093c9a59928425e7bde3"
+  digest = "1:16a5ada24a8dbdd458baef55501fce9d6ca7de9d6562c820aa00849fa30d4c62"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
     "internal/fs",
   ]
   pruneopts = "NT"
-  revision = "5867b95ac084bbfee6ea16595c4e05ab009021da"
+  revision = "65bdadfa96aecebf4dcf888da995a29eab4fc964"
+  version = "v0.0.1"
 
 [[projects]]
   digest = "1:9d8420bbf131d1618bde6530af37c3799340d3762cc47210c1d9532a4c3a2779"
@@ -404,15 +404,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:af1fe3e40e947f75bee6d1f3b3610fa859079ddc4706634d5360213d7e70b954"
+  digest = "1:c519d84f84199354518c9f2a2dc9bb2fa914e77d32d2ecdc3eb574236cb5effd"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "NT"
-  revision = "22d7a77e9e5f409e934ed268692e56707cd169e5"
+  revision = "20be4c3c3ed52bfccdb2d59a412ee1a936d175a7"
 
 [[projects]]
   branch = "master"
-  digest = "1:0df70eb73174e6e58e2c986150b16c61859bea5a7b1a1801f37e12fb1c8ab8d1"
+  digest = "1:30d8f385239d18f0d559d3d6ce8211cfd004e6499bd26aa87c37a01111736bcd"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -423,11 +423,11 @@
     "idna",
   ]
   pruneopts = "NT"
-  revision = "a4d6f7feada510cc50e69a37b484cb0fdc6b7876"
+  revision = "f3200d17e092c607f615320ecaad13d87ad9a2b3"
 
 [[projects]]
   branch = "master"
-  digest = "1:54c605b4036ec49dbc4c887969128d5ee68140cf0bbec46e67cbb2497e69c15e"
+  digest = "1:fe34af3af1d0d0f07056764c8d9e4799418d68f041524a5dbb9a4cc12522ae73"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
@@ -437,18 +437,18 @@
     "jwt",
   ]
   pruneopts = "NT"
-  revision = "9f3314589c9a9136388751d9adae6b0ed400978a"
+  revision = "aaccbc9213b0974828f81aaac109d194880e3014"
 
 [[projects]]
   branch = "master"
-  digest = "1:0dd0b475fc1a7d536dd8250c8ea3aa928ff3370a08419af538e8621a4e08c6eb"
+  digest = "1:91b9650a77dd69879c7042591ba704b9ae1dc09ecea3ccddb795e6de3b8453e5"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "NT"
-  revision = "a5b02f93d862f065920dd6a40dddc66b60d0dec4"
+  revision = "4c4f7f33c9ed00de01c4c741d2177abfcfe19307"
 
 [[projects]]
   digest = "1:348fa8283a7c60b5b71ce04d27b37f7c0fce552d4d0b463b5b3ebbd1840d3f1a"
@@ -486,7 +486,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:01a1deb70c716c231bdc7c48c21ac86c82e6f001e018593c24f0c14e542e92bf"
+  digest = "1:1a142bc5f9ab050dffd14bb2cda520d98aa4c708d1d9bd2cae45a692566f516a"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -498,14 +498,15 @@
     "imports",
     "internal/fastwalk",
     "internal/gopathwalk",
+    "internal/imports",
     "internal/module",
     "internal/semver",
   ]
   pruneopts = "NT"
-  revision = "d81a07b7e58487eed036bf115fa834653590d6cd"
+  revision = "2de7f9bf822ce37065c31659ae7187ea9e416dde"
 
 [[projects]]
-  digest = "1:711179d92dbef98932acd7afd0dab80b4cf2d97f099f3285c9ba8fa451809fec"
+  digest = "1:d85bd4497eba4bba5620f30ba3b7bc3e2d5d73b85dd494eeb6ad79c73cdc23a3"
   name = "google.golang.org/appengine"
   packages = [
     ".",
@@ -520,8 +521,8 @@
     "urlfetch",
   ]
   pruneopts = "NT"
-  revision = "54a98f90d1c46b7731eb8fb305d2a321c30ef610"
-  version = "v1.5.0"
+  revision = "4c25cacc810c02874000e4f7071286a8e96b2515"
+  version = "v1.6.0"
 
 [[projects]]
   digest = "1:2d1fbdc6777e5408cabeb02bf336305e724b925ff4546ded0fa8715a7267922a"
@@ -763,16 +764,16 @@
   revision = "e17681d19d3ac4837a019ece36c2a0ec31ffe985"
 
 [[projects]]
-  digest = "1:300621bb4f98c1440b7298b376058928baf1fceb221a7f4520a92b7b9919bb3d"
+  digest = "1:507ee72b30eee7ecb34253592d108a01e68bf67b9cab25e0dcec7e3ee77cf8c0"
   name = "k8s.io/klog"
   packages = ["."]
   pruneopts = "NT"
-  revision = "e531227889390a39d9533dde61f590fe9f4b0035"
-  version = "v0.3.0"
+  revision = "78315d914a8af2453db4864e69230b647b1ff711"
+  version = "v0.3.2"
 
 [[projects]]
   branch = "master"
-  digest = "1:cb2958a5081c7185fedefec346f185f0c762e299c1a423c8ce4b6d1044c69128"
+  digest = "1:8e8f1c9f4a4f5a229284cadfa57f50c8707c16a3fa311be66f05079d9c488de3"
   name = "k8s.io/kube-openapi"
   packages = [
     "cmd/openapi-gen/args",
@@ -783,7 +784,7 @@
     "pkg/util/sets",
   ]
   pruneopts = "NT"
-  revision = "a01b7d5d6c2258c80a4a10070f3dee9cd575d9c7"
+  revision = "b52b5b0f5a7c473a00ca5580c49c83449146ac17"
 
 [[projects]]
   digest = "1:e03ddaf9f31bccbbb8c33eabad2c85025a95ca98905649fd744e0a54c630a064"
@@ -795,7 +796,6 @@
     "pkg/client/apiutil",
     "pkg/client/config",
     "pkg/controller",
-    "pkg/controller/controllerutil",
     "pkg/event",
     "pkg/handler",
     "pkg/internal/controller",
@@ -826,7 +826,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/go-logr/logr",
     "github.com/imdario/mergo",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
@@ -855,7 +854,6 @@
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/controller",
-    "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil",
     "sigs.k8s.io/controller-runtime/pkg/handler",
     "sigs.k8s.io/controller-runtime/pkg/manager",
     "sigs.k8s.io/controller-runtime/pkg/reconcile",
