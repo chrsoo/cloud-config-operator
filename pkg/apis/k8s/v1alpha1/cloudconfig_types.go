@@ -1,15 +1,85 @@
 package v1alpha1
 
 import (
-	"github.com/imdario/mergo"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 
+// CloudConfigSpec defines the desired state of CloudConfig
+type CloudConfigSpec struct {
+	// Application name, defaults to system name
+	AppName string `json:"appName,omitempty"`
+
+	// List or profile names
+	Profile []string `json:"profile,omitempty"`
+
+	// label used for all apps, defaults to 'master'
+	Label string `json:"label,omitempty"`
+
+	// Cloud Config Server name or URL
+	Server string `json:"server,omitempty"`
+
+	// app spec file name, defaults to 'deployment.yaml'
+	SpecFile string `json:"specFile,omitempty"`
+
+	// Application list property name, optional
+	AppList string `json:"appList,omitempty"`
+
+	// Period is the number of seconds between cloud config synchronizations,
+	// a 0 value means that the environment is updated only once after each CloudConfig change
+	Period int `json:"period,omitempty"`
+
+	// TrustStore optionally defines the name of a secret containing all trusted certificates
+	TrustStore string `json:"trustStore,omitempty"`
+
+	// Cloud Config Server secret containing cloud config credentials, optional
+	Credentials CloudConfigCredentials `json:"credentials,omitempty"`
+
+	// If Insecure is 'true' certificates are not required for
+	// servers outside the cluster and SSL errors are ignored.
+	Insecure bool `json:"insecure,omitempty"`
+}
+
+// CloudConfigCredentials contains the metadata used to retrieve a Kubernetes secret containing
+// Cloud Config Server credentials.
+type CloudConfigCredentials struct {
+	// Secret is the name of the secret that holds all credentials, required
+	Secret string `json:"secret,omitempty"`
+	// Username is the name of the username secret entry, defaults to `username`
+	Username string `json:"username,omitempty"`
+	// Password is the name of the password secret entry, defaults to `password`
+	Password string `json:"password,omitempty"`
+	// Token is the name of the token secret entry, defaults to `token`
+	Token string `json:"token,omitempty"`
+	// Cert is the name of the client certificate secret entry, defaults tp `cert.pem`
+	Cert string `json:"cert,omitempty"`
+	// Key is the name of the client certificate key secret entry, defaults to `key.pem`
+	Key string `json:"key,omitempty"`
+	// RootCA is the name of the secret entry for the certificate used to sign the server certificate,
+	// defaults to `cert.key`
+	RootCA string `json:"rootCA,omitempty"`
+}
+
+// GetDurationUntilNextCycle returns the time.Duration until the start of the next reconciliation cycle.
+// This is calculated as the Period minus the duration from the start of the current cycle. If the
+// current cycle took longer than the period the boolean result is returned as true indicating that
+// one or more periods were skipped.
+func (c CloudConfig) GetDurationUntilNextCycle(startTime time.Time) (time.Duration, bool) {
+	duration := time.Since(startTime)
+	period := time.Duration(c.Spec.Period) * time.Second
+	if duration < period {
+		return period - duration, true
+	}
+	return period, false
+}
+
 // CloudConfigStatus defines the observed state of CloudConfig
 type CloudConfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// TODO think through how to defined the current status of a CloudConfig CloudConfigSpec
+	NamespaceStatus metav1.Status `json:"namsepaceStatus,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -22,18 +92,6 @@ type CloudConfig struct {
 
 	Spec   CloudConfigSpec   `json:"spec,omitempty"`
 	Status CloudConfigStatus `json:"status,omitempty"`
-}
-
-// CloudConfigSpec defines the desired state of CloudConfig
-type CloudConfigSpec struct {
-	// Period is the number of seconds between each synchronization event
-	Period int `json:"period,omitempty"`
-
-	// Default environment properties
-	CloudConfigEnvSpec `json:",omitempty"`
-
-	// Environments where apps are managed
-	Environments map[string]CloudConfigEnvSpec `json:"environments,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -49,77 +107,12 @@ func init() {
 	SchemeBuilder.Register(&CloudConfig{}, &CloudConfigList{})
 }
 
-// GetEnvironment returns an environment from the spec falling back to default values for unspecified fields
-func (config *CloudConfig) GetEnvironment(key string) *CloudConfigEnv {
-	e, ok := config.Spec.Environments[key]
-	if !ok {
-		return nil
-	}
-
-	// use a copy as we do not want to corrupt the values supplied by the user
-	env := e.DeepCopy()
-	env.Env = key
-	env.Sys = config.Name
-
-	// env values that are already defined are retained
-	mergo.Merge(env, config.Spec.CloudConfigEnvSpec)
-
-	// apply default credential values
-	mergo.Merge(env, NewCloudConfigEnvSpec(config.Spec.AppName, config.Name, key))
-
-	// special rule for `Period` as ints are not merged
-	if env.Period == 0 {
-		env.Period = config.Spec.Period
-	}
-
-	fallBackIfEmpty(&env.AppName, config.Spec.AppName)
-	fallBackIfEmpty(&env.AppName, config.Name)
-
-	fallBackIfEmpty(&env.Label, config.Spec.Label)
-
-	return &CloudConfigEnv{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.managedNamespaceForEnv(key),
-			Namespace: config.Namespace,
-			Labels: map[string]string{
-				"app": env.AppName,
-				"sys": env.Sys,
-				"env": env.Env,
-			},
-		},
-		Spec: *env,
-	}
-}
-
-// IsManagedNamespace returns `true` if the given namespace is managed by one of the
-// CloudConfig's environments.
-func (config *CloudConfig) IsManagedNamespace(namespace string) bool {
-	for key := range config.Spec.Environments {
-		if namespace == config.managedNamespaceForEnv(key) {
-			return true
-		}
-	}
-	return false
-}
-
-func (config *CloudConfig) managedNamespaceForEnv(name string) string {
-	return config.Name + "-" + name
-}
-
-func fallBackIfEmpty(field *string, defaultValue string) {
-	if *field == "" {
-		*field = defaultValue
-	}
-}
-
-// NewCloudConfigEnvSpec returns the default spec for CloudConfigEnv
-func NewCloudConfigEnvSpec(app, sys, env string) *CloudConfigEnvSpec {
-	return &CloudConfigEnvSpec{
-		AppName:     app,
-		Sys:         sys,
-		Env:         env,
+// NewCloudConfigSpec returns the default spec for CloudConfig
+func NewCloudConfigSpec() *CloudConfigSpec {
+	return &CloudConfigSpec{
 		Label:       "master",
 		Server:      "cloud-config-server:8888",
+		SpecFile:    "deployment.yaml",
 		Credentials: *NewCloudConfigCredentials(),
 	}
 }

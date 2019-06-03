@@ -21,7 +21,9 @@ rules:
   resources:
   - namespaces
   verbs:
-  - '*'
+  - get
+  - watch
+  - list
 - apiGroups:
   - apps
   resources:

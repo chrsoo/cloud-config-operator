@@ -1,11 +1,11 @@
 # Cloud Config Operator
 Provision Kubernetes applications using Spring Cloud Config Server with a GitOps approach.
 
-## Custom Resource Definition
-The `CloudConfig` CRD defines one or more Spring Cloud Config Apps that that
+## Overview
+The `CloudConfig` CR defines one or more Spring Cloud Config Applocations that
 Cloud Config Operator will monitor and synchronize with the cluster state.
 
-CloudConfig CRD example:
+`CloudConfig` CR example:
 
 ```yaml
 apiVersion:     k8s.jabberwocky.se/v1alpha1
@@ -23,83 +23,107 @@ spec:
     key:        cert.key                  # Name of the private key entry, defaults to `cert.key`
     rootCA:     ca.pem                    # Name of the CA cert entry, defaults to `ca.pem`
   appName:      cluster                   # app name, defaults to the CloudConfig name
-  label:        master                    # label used for all apps, defaults to 'master'
+  label:        master                    # cloud config label used for all apps, defaults to 'master'
+  profile:      [ dev ]                   # cloud config application profile(s)
   appList:      services                  # app list property in the app config
   specFile:     deployment.yaml           # app spec file, defaults to 'deployment.yaml'
   insecure:     true                      # do not require or verify SSL server certs
   truststore:   global-trust-store        # Optional secret containg all trusted certs
   period:       10                        # seconds between configuation cycles, defaults to 0 (disabled)
-
-  environments:                           # Environments where apps are managed, defaults to global conf
-    dev:                                  # environment key
-      name:     Development               # environment name, defaults to the key value
-      profile:  [ dev ]                   # cloud config profiles for the env
-    prd:
-      profile:  [ prd ]
 ```
-## Overview
-Cloud Config Apps exist in a number of `environments`. Each environment is
-defined by a list of `profiles` and a `label`.
 
-For each *environment* in `environments`, Spring Cloud Operator will
+Each time the CR is changed (or optionally every `period` number of seconds) the operator will
 
-* Retrieve the `appList` list of applications for the `appName` application;
-* Retrieve the `specFile` Kubernetes YAML file for each app on the list;
+ * Retrieve the `specFile` Kubernetes YAML file for the given `appName` application, `label` and `profile` from the `server`;
+ * Run the following `kubectl` command:
+    ```
+    kubectl apply -ns <namespace> --purge -f -
+    ```
+
+If the `CloudConfig` contains a Spring Cloud Config property in the `appList` field the operator will instead
+
+* Retrieve the `appList` list of applications for the `appName` application, `label` and `profile` from the `server`;
+* Retrieve and concatenate the `specFile` Kubernetes YAML file for each app on the list using the same `label` and `profile`;
 * Pipe the concatenated YAML spec files to the following `kubectl` command:
   ```
-  kubectl apply -ns <environment> --purge -f -
+  kubectl apply -ns <namespace> --purge -f -
   ```
-(Ideally we should get rid of using `kubectl` and instead implement the synchronization logic in the operator using the Kubernetes API machinery; this is subject to a future release)
-### Spring Cloud Config Example
+
+## Spring Cloud Config Example
 
 The examples that follow assume a Spring Cloud Config Server backed by a Git repository (or file system) similar to the [test repository](test/server/repository). This file repository can be used to back a Spring Cloud Config Server test deployment as found in the [cloud-config-server.yaml](test/deploy/cloud-config-server.yaml) file.
 
-:warning:   Note the Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
+:warning: Note the Spring Cloud Config Server deployment is intended for testing and that correctly implementing Spring Cloud Config Server is out of scope for this project!
 
-### App or List of Apps
-
-A CloudConfig can either define a single App or a list of Apps.
-
-In the first case the `appName` is the name of the Spring Cloud Config application.
-
-In the second case the `appName` defines the application that must contain at least the configuration property defined by `appList` that lists the Apps to manage. This property
-can have different values in different environments.
-
-### Environments and Namespaces
-An environment manages a single namespace named after the `CloudConfig` and the environment. For example given the example above with the `CloudConfig` name `test` the `prd` environment manages the namespace  `test-prd`
-
-### Versioning of Apps
-As we typically want to propagate a new App version through the different environments, e.g. from `dev` to `prd` (in many enterprises there would also be a `qua` for quality assurance etc) it makes sense to make the App version configurable per environment.
-
-In the configuration repository this could be managed by having the file `alpha-dev.yaml` contain the property field
-```
-version: 1.2.0-SNAPSHOT
-```
-... and `alpha-prd.yaml` contain the current stable version
-```
-version: 1.1.0
-```
-### Kubernetes specification files
+## Kubernetes specification files
 In order to manage Kubernetes deployments for the apps we use the `specFile` property. This contains the name of the Spring Cloud Config template file used to deploy the apps, e.g. [deployment.yaml](test/server/repository/deployment.yaml).
 
 The template file contains property placeholders which will be filed in by the configuration values for which the file is retrieved.
 
-Note that a deployment file can be replaced for each application (cf. the [deployment.yaml](test/server/repository/gamma/deployment.yaml) for the gamma example app.) The file can also be different per environment etc.
-
-## Install
-
-```
-# Add the CRD's
-kubectl apply -f deploy/crds/k8_v1alpha1_cloudconfig_crd.yaml -f deploy/crds/k8_v1alpha1_cloudconfigenv_crd.yaml
-
-# Don't forget to review and adapt role.yaml before applying to the cluster!
-kubectl apply -f deploy/role.yaml -f deploy/role_binding.yaml -f deploy/service_account
-
-# Deploy the operator
-sed 's|REPLACE_IMAGE|dtr.richemont.com/digital/cloud-config-operator:0.2.0|g' deploy/operator.yaml | kubectl apply -f -
+For example, the `app` label in this example snippet will be replaced by the value of the `${app}` placeholder:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${app}
+  labels:
+    app: ${app}
+...
 ```
 
-###Adapt the cloud-config-operator role
+Note that a deployment file can be different for each application.
+
+For example the gamma application in the example app is different than for the other apps, cf. the [deployment.yaml](test/server/repository/gamma/deployment.yaml) file.
+
+## Application Versions
+As we typically want to promote App versions through the different environments, e.g. from `dev` to `qua` to `prd`, it makes sense to make the Application version configurable per environment. Differente environments would match to different profiles.
+
+For example given that the `alpha` application defines a  `version` property the corresponding configuration files in a Spring Cloud Config Git repository could look like...
+
+__alpha-dev.yaml__
+
+    version: 1.1.2-SNAPSHOT
+
+__alpha-qua.yaml__
+
+    version: 1.1.1
+
+__alpha-prd.yaml__
+
+    version: 1.0.4
+
+Which translates to version 1.0.4 in `prd`, 1.1.1 in `qua` and 1.1.2-SNAPSHOT in `dev`. The deployment specification used to deploy the application would use the `version` property to specify the image tag and in metadata used to identify the pod at runtime:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${app}
+  labels:
+    app: ${app}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${app}
+  template:
+    metadata:
+      labels:
+        app: ${app}
+    spec:
+      containers:
+      - name: ${app}-container
+        image: "${container.image}:${version}"
+```
+
+## Installation
+### Add the CRD
+Add the Custom Resource Definition to the cluster:
+```
+kubectl apply -f deploy/crds/cloudconfig_crd.yaml
+```
+
+### Adapt and add the ClusterRole
 The `cloud-config-operator` role defined in [deploy/role.yaml] should be adapted to the specific needs of your Kubernetes cluster. The following permissions are required for the basic operation of the `cloud-config-operator`
 
 // TODO tune the rules required for the operation of cloud-config-operator
@@ -108,6 +132,38 @@ The `cloud-config-operator` role defined in [deploy/role.yaml] should be adapted
   // TODO add role yaml rules
   ```
 In addition the operator needs to have all the required permissions to manage the apps. Typically this means creating, retrieving and deleting deployments but additional rules  may be required if for example the apps define `CronJob`s in their YAML specifications.
+```
+kubectl apply -f deploy/role.yaml
+kubectl apply -f deploy/service_account.yaml
+kubectl apply -f deploy/role_binding.yaml
+```
+### Deploy the operator
+Replace the REPLACE_IMAGE placeholder in  deploy/operator.yaml and deploy the operator:
+```
+sed 's|REPLACE_IMAGE|chrsoo/cloud-config-operator:latest|g' deploy/operator.yaml | kubectl apply -f -
+```
+## Usage
+Synchronziation of a `CloudConfig` application (or list of applications) is started by creating the CR:
+```
+export NAMESPACE="default"
+
+cat <<EOF | kubectl --namespace ${NAMESPACE} apply -f -
+apiVersion:     k8s.jabberwocky.se/v1alpha1
+kind:           CloudConfig
+metadata:
+  name:         cluster
+spec:
+  server:       http://cloud-config-server:8888
+  insecure:     true
+  credentials:
+    secret:     cloud-config-credentials
+  profile:      [ prd, us-west ]
+  period:       10
+EOF
+```
+To stop synchronization simply delete the CR.
+
+If the `period` is not defined synchronization is only done once and if a value is given synchronization occurs every `period` number of seconds.
 
 ## REST API
 
@@ -159,7 +215,7 @@ __To setup the Operator SDK please follow the [Quick Start instsructions on GitH
 ## Roadmap
 
 - [X] v0.1 `CloudConfig` CRD for managing Spring Cloud Config apps. Experimental version based on CronJob and Kubectl to get things going.
-- [X] v0.2 `CloudConfigEnv` CRD replaces CronJob.
+- [X] v0.2 `CloudConfig` Removed CronJob.
 - [ ] v0.3 REST API for CI/CD integrations
 - [ ] v0.4 `CloudConfigApp` CRD removes the `kubectl` dependency
 - [ ] v1.0 The first stable version of `cloud-config-operator` resource API

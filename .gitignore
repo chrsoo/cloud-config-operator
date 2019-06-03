@@ -85,3 +85,4 @@ tags
 # Project
 tmp
 vendor
+*.log

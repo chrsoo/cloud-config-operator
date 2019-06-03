@@ -1,4 +1,4 @@
-package cloudconfigenv
+package cloudconfig
 
 import (
 	"bytes"
@@ -125,4 +125,26 @@ func TestAppendClientCertOption(t *testing.T) {
 	opts, err = appendClientCertOption(opts, cr, secret)
 	assert.Error(t, err, "cert.pem requires a cert.key entry")
 	assert.Nil(t, opts)
+}
+
+func TestValidation(t *testing.T) {
+	spec := k8v1alpha1.CloudConfigSpec{}
+	assert.Error(t, validate(&spec), "A Config Server URL is required")
+
+	spec.Server = "http://localhost"
+	assert.Error(t, validate(&spec), "appName must be specified")
+
+	spec.AppName = "cluster"
+	assert.Error(t, validate(&spec), "specFile must be specified")
+
+	spec.SpecFile = "default.yaml"
+	assert.Error(t, validate(&spec), "The Config Server must use the https protocol if insecure=false")
+
+	spec.Insecure = true
+	assert.NoError(t, validate(&spec), "Insecure Config Server URLs are allowed if insecure=true")
+
+	spec.Server = "https://localhost"
+	assert.NoError(t, validate(&spec), "A secure Config Server URL should not provoke an error")
+	spec.Insecure = false
+	assert.NoError(t, validate(&spec), "A secure Config Server URL should not provoke an error")
 }

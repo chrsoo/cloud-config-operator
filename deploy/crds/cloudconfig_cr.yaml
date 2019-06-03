@@ -13,16 +13,10 @@ spec:
     key:        cert.key                  # Name of the private key entry, defaults to `cert.key`
     rootCA:     ca.pem                    # Name of the CA cert entry, defaults to `ca.pem`
   appName:      cluster                   # app name, defaults to the CloudConfig name
-  label:        master                    # label used for all apps, defaults to 'master'
+  label:        master                    # cloud config label used for all apps, defaults to 'master'
+  profile:      [ dev ]                   # cloud config application profile(s)
   appList:      services                  # app list property in the app config
   specFile:     deployment.yaml           # app spec file, defaults to 'deployment.yaml'
   insecure:     true                      # do not require or verify SSL server certs
   truststore:   global-trust-store        # Optional secret containg all trusted certs
   period:       10                        # seconds between configuation cycles, defaults to 0 (disabled)
-
-  environments:                           # Environments where apps are managed, defaults to global conf
-    dev:                                  # environment key
-      name:     Development               # environment name, defaults to the key value
-      profile:  [ dev ]                   # cloud config profiles for the env
-    prd:
-      profile:  [ prd ]

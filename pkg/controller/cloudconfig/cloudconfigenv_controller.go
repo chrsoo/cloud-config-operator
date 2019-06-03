@@ -1,37 +1,33 @@
-package cloudconfigenv
+package cloudconfig
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
+	"github.com/imdario/mergo"
 
 	k8v1alpha1 "github.com/chrsoo/cloud-config-operator/pkg/apis/k8s/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
-
-// Add creates a new CloudConfigEnv Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new CloudConfig Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -39,28 +35,28 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileCloudConfigEnv{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileCloudConfig{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("cloudconfigenv-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("cloudconfig-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to primary resource CloudConfigEnv
-	err = c.Watch(&source.Kind{Type: &k8v1alpha1.CloudConfigEnv{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to primary resource CloudConfig
+	err = c.Watch(&source.Kind{Type: &k8v1alpha1.CloudConfig{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner CloudConfigEnv
+	// Watch for changes to secondary resource Pods and requeue the owner CloudConfig
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &k8v1alpha1.CloudConfigEnv{},
+		OwnerType:    &k8v1alpha1.CloudConfig{},
 	})
 	if err != nil {
 		return err
@@ -69,31 +65,31 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-var _ reconcile.Reconciler = &ReconcileCloudConfigEnv{}
+var _ reconcile.Reconciler = &ReconcileCloudConfig{}
 
-// ReconcileCloudConfigEnv reconciles a CloudConfigEnv object
-type ReconcileCloudConfigEnv struct {
+// ReconcileCloudConfig reconciles a CloudConfig object
+type ReconcileCloudConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
 }
 
-// Reconcile reads that state of the cluster for a CloudConfigEnv object and makes changes based on the
-// state read and what is in the CloudConfigEnv.Spec
+// Reconcile reads that state of the cluster for a CloudConfig object and makes changes based on the
+// state read and what is in the CloudConfig.Spec
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileCloudConfigEnv) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileCloudConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	start := time.Now()
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling CloudConfigEnv")
+	reqLogger.Info("Reconciling CloudConfig")
 
-	// Fetch the CloudConfigEnv instance
-	env := &k8v1alpha1.CloudConfigEnv{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, env)
+	// Fetch the CloudConfig instance
+	c := &k8v1alpha1.CloudConfig{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, c)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
@@ -103,61 +99,78 @@ func (r *ReconcileCloudConfigEnv) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	reqLogger = reqLogger.WithValues("environment", env.Name)
-
-	// Reconcile the CloudConfigEnv in the namespace
-	if err = r.reconcileNamespace(env, reqLogger); err != nil {
-		// Retry as soon as possible
-		return reconcile.Result{}, err
+	c = getEffectiveConfig(c)
+	if err = validate(&c.Spec); err != nil {
+		log.Error(err, "Validation failed")
+		// Return and don't requeue
+		return reconcile.Result{}, nil
 	}
 
-	// Reconcile the CloudConfigEnv in the namespace
-	apps, err := r.reconcileApps(env)
+	// Reconcile the CloudConfig
+	apps, err := r.reconcileApps(c)
 	if err != nil {
 		reqLogger.Error(err, "Reconciliation failed")
 	} else if len(apps) == 0 {
-		reqLogger.Info(fmt.Sprintf("Apps not found for field '%s' of app '%s'", env.Spec.AppList, env.Spec.AppName))
+		reqLogger.Info(fmt.Sprintf("Apps not found for field '%s' of app '%s'", c.Spec.AppList, c.Spec.AppName))
 	} else {
 		reqLogger.Info(fmt.Sprintf("Reconciled %d app(s) %v in %v", len(apps), apps, time.Since(start)))
 	}
 
-	// Don't reschedule as this is a one-off reconciliation
-	if env.Spec.Period <= 0 {
-		reqLogger.Info("Reconciled CloudConfigEnv; no rescheduling")
+	// check if this is a one-off reconciliation
+	if c.Spec.Period <= 0 {
+		reqLogger.Info("Reconciled CloudConfig; no rescheduling")
+		// Don't reschedule as this is a one-off reconciliation
 		return reconcile.Result{}, nil
 	}
 
 	// reschedule the next reconciliation cycle
-	next, skipped := env.GetDurationUntilNextCycle(start)
+	next, skipped := c.GetDurationUntilNextCycle(start)
 	if skipped {
 		reqLogger.Info("Skipping one or more cycles as reconciliation took too long, consider a prolonging the period!")
 	}
-	reqLogger.Info(fmt.Sprintf("Reconciled CloudConfigEnv; rescheduling in %v", next))
+	reqLogger.Info(fmt.Sprintf("Reconciled CloudConfig; rescheduling in %v", next))
 	return reconcile.Result{Requeue: true, RequeueAfter: next}, nil
 }
 
-func (r *ReconcileCloudConfigEnv) reconcileApps(env *k8v1alpha1.CloudConfigEnv) ([]string, error) {
-	client, err := r.createClient(env)
+func getEffectiveConfig(c *k8v1alpha1.CloudConfig) *k8v1alpha1.CloudConfig {
+	eff := c.DeepCopy()
+
+	// merge defaults for properties that are not specified
+	mergo.Merge(&eff.Spec, k8v1alpha1.NewCloudConfigSpec())
+	// special rule for `Period` as ints are not merged
+	if eff.Spec.Period == 0 {
+		eff.Spec.Period = c.Spec.Period
+	}
+
+	fallBackIfEmpty(&eff.Spec.AppName, c.ObjectMeta.Name)
+
+	return eff
+}
+
+func (r *ReconcileCloudConfig) reconcileApps(c *k8v1alpha1.CloudConfig) ([]string, error) {
+	client, err := r.createClient(c)
 	if err != nil {
 		return nil, err
 	}
 
 	var apps []string
-	if env.Spec.AppList == "" { // Synchronize a single app
-		apps = []string{env.Spec.AppName}
-	} else { // Synchronize the apps found in the AppList field of the AppName app
-		apps, err = client.getApps(env.Spec.AppList, env.Spec.AppName, env.Spec.Label, env.Spec.Profile...)
+	if c.Spec.AppList == "" {
+		// Synchronize a single app
+		apps = []string{c.Spec.AppName}
+	} else {
+		// Synchronize the apps found in the AppList field of the AppName app
+		apps, err = client.getApps(c.Spec.AppList, c.Spec.AppName, c.Spec.Label, c.Spec.Profile...)
 		if err != nil {
 			return nil, err
 		}
-		// Get the apps and order alphabetically to maintain consistency when applying the k8Config
+		// Order alphabetically to maintain consistency when applying the CloudConfig
 		sort.Strings(apps)
 	}
 
 	// concatenate all app files into one configuration for the entire namespace
 	spec := make([]byte, 0, 1024)
 	for _, app := range apps {
-		file, err := client.GetConfigFile(env.Spec.SpecFile, app, env.Spec.Label, env.Spec.Profile...)
+		file, err := client.GetConfigFile(c.Spec.SpecFile, app, c.Spec.Label, c.Spec.Profile...)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +179,7 @@ func (r *ReconcileCloudConfigEnv) reconcileApps(env *k8v1alpha1.CloudConfigEnv) 
 	}
 
 	if len(spec) > 0 {
-		err = r.apply(env.Name, &spec)
+		err = r.apply(c.Namespace, &spec)
 		if err != nil {
 			return nil, err
 		}
@@ -176,7 +189,7 @@ func (r *ReconcileCloudConfigEnv) reconcileApps(env *k8v1alpha1.CloudConfigEnv) 
 
 var execCommand = exec.Command
 
-func (r *ReconcileCloudConfigEnv) apply(namespace string, spec *[]byte) error {
+func (r *ReconcileCloudConfig) apply(namespace string, spec *[]byte) error {
 	cmd := execCommand(
 		"kubectl",
 		"--namespace="+namespace,
@@ -202,36 +215,36 @@ func (r *ReconcileCloudConfigEnv) apply(namespace string, spec *[]byte) error {
 	return nil
 }
 
-func (r *ReconcileCloudConfigEnv) createClient(env *k8v1alpha1.CloudConfigEnv) (*CloudConfigClient, error) {
+func (r *ReconcileCloudConfig) createClient(c *k8v1alpha1.CloudConfig) (*CloudConfigClient, error) {
 
 	opts := make([]func(*CloudConfigClient), 0, 10)
 	var err error
 
-	if opts, err = r.appendCredentialsOptions(opts, env); err != nil {
+	if opts, err = r.appendCredentialsOptions(opts, c); err != nil {
 		return nil, err
 	}
 
-	if opts, err = r.configureTrustStore(opts, env); err != nil {
+	if opts, err = r.configureTrustStore(opts, c); err != nil {
 		return nil, err
 	}
 
-	if env.Spec.Insecure {
+	if c.Spec.Insecure {
 		opts = append(opts, Insecure())
 	}
 
-	return New(env.Spec.Server, opts...)
+	return New(c.Spec.Server, opts...)
 }
 
-func (r *ReconcileCloudConfigEnv) configureTrustStore(
+func (r *ReconcileCloudConfig) configureTrustStore(
 	opts []func(*CloudConfigClient),
-	env *k8v1alpha1.CloudConfigEnv) ([]func(*CloudConfigClient), error) {
+	c *k8v1alpha1.CloudConfig) ([]func(*CloudConfigClient), error) {
 
-	if env.Spec.TrustStore == "" {
+	if c.Spec.TrustStore == "" {
 		return opts, nil
 	}
 
 	secret := &corev1.Secret{}
-	name := types.NamespacedName{Name: env.Spec.TrustStore, Namespace: env.Namespace}
+	name := types.NamespacedName{Name: c.Spec.TrustStore, Namespace: c.Namespace}
 	if err := r.client.Get(context.TODO(), name, secret); err != nil {
 		return nil, err
 	}
@@ -239,12 +252,12 @@ func (r *ReconcileCloudConfigEnv) configureTrustStore(
 	return append(opts, TrustStore(secret.Data)), nil
 }
 
-func (r *ReconcileCloudConfigEnv) appendCredentialsOptions(
+func (r *ReconcileCloudConfig) appendCredentialsOptions(
 	opts []func(*CloudConfigClient),
-	env *k8v1alpha1.CloudConfigEnv) ([]func(*CloudConfigClient), error) {
+	c *k8v1alpha1.CloudConfig) ([]func(*CloudConfigClient), error) {
 
 	var err error
-	cr := &env.Spec.Credentials
+	cr := &c.Spec.Credentials
 
 	// Configure credentials only if secret has been set
 	if cr.Secret == "" {
@@ -252,7 +265,7 @@ func (r *ReconcileCloudConfigEnv) appendCredentialsOptions(
 	}
 
 	secret := &corev1.Secret{}
-	name := types.NamespacedName{Name: cr.Secret, Namespace: env.Namespace}
+	name := types.NamespacedName{Name: cr.Secret, Namespace: c.Namespace}
 	if err := r.client.Get(context.TODO(), name, secret); err != nil {
 		return nil, err
 	}
@@ -331,50 +344,49 @@ func appendBearerAuthOption(
 	return opts, nil
 }
 
-func (r *ReconcileCloudConfigEnv) reconcileNamespace(
-	env *k8v1alpha1.CloudConfigEnv, logger logr.Logger) error {
-
-	// Define a new Namespace for the environment
-	ns := newEnvironmentNamespace(env)
-
-	// Set CloudConfigEnv instance as the owner and controller
-	if err := controllerutil.SetControllerReference(env, ns, r.scheme); err != nil {
-		return err
+func validate(spec *k8v1alpha1.CloudConfigSpec) error {
+	validationErrors := field.ErrorList{}
+	if spec.Server == "" {
+		path := field.NewPath("server")
+		fieldErr := field.Required(path, "A Config Server URL must be provided")
+		validationErrors = append(validationErrors, fieldErr)
 	}
 
-	// Check if this Namespace already exists
-	found := &corev1.Namespace{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: ns.Name, Namespace: ns.Namespace}, found)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			logger.Info("Creating a namespace", "Name", ns.Name)
-			err = r.client.Create(context.TODO(), ns)
-			if err != nil {
-				return err
-			}
-		}
-	} else if found.ObjectMeta.Labels["app"] != ns.Labels["app"] || found.ObjectMeta.Labels["env"] != ns.Labels["env"] || found.ObjectMeta.Labels["sys"] != ns.Labels["sys"] {
-		found.Labels["app"] = ns.Labels["app"]
-		found.Labels["env"] = ns.Labels["env"]
-		found.Labels["sys"] = ns.Labels["sys"]
-		err = r.client.Update(context.TODO(), found)
+	// Allow plain http only if insecure is true, if no protocol scheme
+	// is specified we automatically use https in Environment!
+	url := strings.ToLower(spec.Server)
+	if !spec.Insecure && strings.HasPrefix(url, "http:") {
+		path := field.NewPath("server")
+		fieldErr := field.Invalid(path, spec.Server, "URL must use the `https` scheme")
+		validationErrors = append(validationErrors, fieldErr)
 	}
 
-	return err // nil if all went well
+	if spec.AppName == "" {
+		path := field.NewPath("appName")
+		fieldErr := field.Invalid(path, spec.AppName, "appName must be specified")
+		validationErrors = append(validationErrors, fieldErr)
+	}
+
+	if spec.SpecFile == "" {
+		path := field.NewPath("specFile")
+		fieldErr := field.Invalid(path, spec.SpecFile, "specfile must be specified")
+		validationErrors = append(validationErrors, fieldErr)
+	}
+
+	if len(validationErrors) > 0 {
+		// TODO add CloudConfigSpec's group and kind to groupKind instance
+		groupKind := schema.GroupKind{}
+		err := k8errors.NewInvalid(groupKind, "CloudConfigSpec", validationErrors)
+		// TODO return error instance wrapping err
+		return errors.New(err.Error())
+		// return errors.New("Validation failed")
+	}
+
+	return nil
 }
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newEnvironmentNamespace(cr *k8v1alpha1.CloudConfigEnv) *corev1.Namespace {
-	labels := map[string]string{
-		"app": cr.Spec.AppName,
-		"sys": cr.Spec.Sys,
-		"env": cr.Spec.Env,
-	}
-	return &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   cr.Name,
-			Labels: labels,
-		},
-		Spec: corev1.NamespaceSpec{},
+func fallBackIfEmpty(field *string, defaultValue string) {
+	if *field == "" {
+		*field = defaultValue
 	}
 }
